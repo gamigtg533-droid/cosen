@@ -9,9 +9,20 @@ connectDB();
 
 const app = express();
 
+// ── Allowed Origins ──────────────────────────────────────────
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5000'];
+if (process.env.CLIENT_URL) {
+  const url = process.env.CLIENT_URL.trim();
+  allowedOrigins.push(url);
+  if (!url.startsWith('http')) {
+    allowedOrigins.push(`https://${url}`);
+    allowedOrigins.push(`http://${url}`);
+  }
+}
+
 // ── Middleware ──────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -54,7 +65,7 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
