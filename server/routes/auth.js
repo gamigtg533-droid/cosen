@@ -93,13 +93,8 @@ router.post('/register', async (req, res) => {
     const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
     const authExpire = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    // The DB user_role enum currently only supports 'student' and 'admin'.
-    // We store the intended role preference in the bio/skills until the enum is extended.
-    // TODO: Run this SQL in Supabase SQL Editor to enable full roles:
-    //   ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'buyer';
-    //   ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'seller';
-    //   ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'both';
-    const dbRole = 'student';
+    // Map wizard role value to DB role
+    const dbRole = role === 'seller' ? 'seller' : role === 'buyer' ? 'buyer' : 'both';
 
     const { data: user, error } = await supabase
       .from('users')
