@@ -24,7 +24,7 @@ const sendEmail = async (options) => {
     // ── Resend (HTTP-based, works on Railway) ────────────────
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `Cosen Platform <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
       to: [options.email],
       subject: options.subject,
