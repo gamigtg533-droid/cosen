@@ -116,20 +116,19 @@ router.post('/register', async (req, res) => {
 
     if (error) throw error;
 
-    const message = `Welcome to Cosen!\n\nYour email verification code is: ${otp}\n\nThis code will expire in 15 minutes.`;
-
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Cosen Email Verification - OTP Code',
-        message
-      });
-    } catch (err) {
-      console.log('Error sending email. Your OTP was:', otp);
-      // For development purposes when SMTP is missing
-    }
-
+    // ✅ Send response IMMEDIATELY — don't block on email delivery
     sendToken(user, 201, res, 'Account created! Please check your email for the verification OTP.');
+
+    // 🔥 Send OTP email in background (non-blocking)
+    const message = `Welcome to Cosen!\n\nYour email verification code is: ${otp}\n\nThis code will expire in 15 minutes.`;
+    sendEmail({
+      email: user.email,
+      subject: 'Cosen Email Verification - OTP Code',
+      message
+    }).catch((err) => {
+      console.error('Background email send failed. OTP was:', otp, err.message);
+    });
+
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ success: false, message: 'Server error. Please try again.' });
@@ -464,17 +463,18 @@ router.post('/resend-otp', protect, async (req, res) => {
 
     const message = `Welcome to Cosen!\n\nYour new email verification code is: ${otp}\n\nThis code will expire in 15 minutes.`;
 
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Cosen Email Verification - New OTP Code',
-        message
-      });
-    } catch (err) {
-      console.log('Error sending resend email. New OTP:', otp);
-    }
-
+    // ✅ Send response immediately
     res.status(200).json({ success: true, message: 'A new OTP has been sent to your email.' });
+
+    // 🔥 Send email in background
+    sendEmail({
+      email: user.email,
+      subject: 'Cosen Email Verification - New OTP Code',
+      message
+    }).catch((err) => {
+      console.error('Background resend-otp email failed. OTP was:', otp, err.message);
+    });
+
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error during OTP resend.' });
   }
