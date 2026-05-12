@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   BookOpen, Code, Palette, PenTool, Database, Music,
   Plus, X, ChevronRight, Loader, CheckCircle, AlertCircle,
@@ -31,6 +31,8 @@ const catBg = {
 export default function PostService() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit'); // null if creating, service id if editing
 
   const [form, setForm] = useState({
     title: '',
@@ -47,6 +49,31 @@ export default function PostService() {
   const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(!!editId);
+
+  // ── Load existing service for editing ──────────────
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      try {
+        const { data } = await api.get(`/services/${editId}`);
+        const s = data.service;
+        setForm({
+          title: s.title || '',
+          description: s.description || '',
+          category: s.category || '',
+          price: s.price?.toString() || '',
+          deliveryDays: s.deliveryDays?.toString() || '',
+          tags: s.tags || [],
+          coverImageUrl: s.images?.[0] || s.coverImageUrl || '',
+        });
+      } catch (err) {
+        setApiError('Could not load service. Please go back and try again.');
+      } finally {
+        setLoadingEdit(false);
+      }
+    })();
+  }, [editId]);
 
   // ── Auth Guard ─────────────────────────────────────
   if (!user) {
@@ -121,7 +148,7 @@ export default function PostService() {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
   };
 
-  // ── Submit ───────────────────────────────────────
+  // ── Submit (create or update) ──────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError('');
@@ -131,7 +158,7 @@ export default function PostService() {
 
     setSubmitting(true);
     try {
-      const { data } = await api.post('/services', {
+      const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
         category: form.category,
@@ -139,11 +166,22 @@ export default function PostService() {
         deliveryDays: Number(form.deliveryDays),
         tags: form.tags,
         coverImageUrl: form.coverImageUrl,
-      });
-      if (data.success) {
-        setSuccess(true);
-        setTimeout(() => navigate(`/services/${data.service._id || data.service.id}`), 1200);
+      };
+
+      let serviceId;
+      if (editId) {
+        // UPDATE existing service
+        const { data } = await api.put(`/services/${editId}`, payload);
+        serviceId = data.service?._id || data.service?.id || editId;
+      } else {
+        // CREATE new service
+        const { data } = await api.post('/services', payload);
+        if (!data.success) throw new Error(data.message);
+        serviceId = data.service._id || data.service.id;
       }
+
+      setSuccess(true);
+      setTimeout(() => navigate(`/services/${serviceId}`), 1200);
     } catch (err) {
       setApiError(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
@@ -152,6 +190,15 @@ export default function PostService() {
   };
 
   const selCat = CATEGORIES.find(c => c.value === form.category);
+
+  // Show spinner while loading edit data
+  if (loadingEdit) {
+    return (
+      <div className="min-h-screen bg-stripe-bg flex items-center justify-center pt-16">
+        <Loader className="h-8 w-8 animate-spin text-stripe-purple" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stripe-bg pt-16 pb-20">
@@ -167,8 +214,12 @@ export default function PostService() {
               <Briefcase className="h-6 w-6 text-stripe-purple" />
             </div>
             <div>
-              <h1 className="font-display font-bold text-stripe-slate text-3xl leading-tight">Post a Service</h1>
-              <p className="text-stripe-muted text-sm mt-0.5">Share your skills with campus peers and start earning</p>
+              <h1 className="font-display font-bold text-stripe-slate text-3xl leading-tight">
+                {editId ? 'Edit Service' : 'Post a Service'}
+              </h1>
+              <p className="text-stripe-muted text-sm mt-0.5">
+                {editId ? 'Update your service details below' : 'Share your skills with campus peers and start earning'}
+              </p>
             </div>
           </div>
         </div>
@@ -177,7 +228,7 @@ export default function PostService() {
         {success && (
           <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl p-4 mb-6 animate-pulse-once">
             <CheckCircle className="h-5 w-5 shrink-0" />
-            <span className="font-semibold text-sm">Service posted! Redirecting…</span>
+            <span className="font-semibold text-sm">{editId ? 'Service updated!' : 'Service posted!'} Redirecting…</span>
           </div>
         )}
 
@@ -497,10 +548,10 @@ export default function PostService() {
               className="btn-primary px-8 py-3.5 text-base"
             >
               {submitting
-                ? <><Loader className="h-4 w-4 animate-spin" /> Publishing…</>
+                ? <><Loader className="h-4 w-4 animate-spin" /> {editId ? 'Saving…' : 'Publishing…'}</>
                 : success
-                ? <><CheckCircle className="h-4 w-4" /> Published!</>
-                : <><Zap className="h-4 w-4" /> Post Service</>
+                ? <><CheckCircle className="h-4 w-4" /> {editId ? 'Saved!' : 'Published!'}</>
+                : <><Zap className="h-4 w-4" /> {editId ? 'Save Changes' : 'Post Service'}</>
               }
             </button>
           </div>
