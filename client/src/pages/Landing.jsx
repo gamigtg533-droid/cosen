@@ -4,6 +4,11 @@ import useAuthStore from '../store/authStore';
 import BrandLogo from '../components/BrandLogo';
 import { ChevronRight, ChevronLeft, Star, Shield, Zap, BookOpen, Code, Palette, PenTool, Database, Music, Search, Loader, ShieldCheck, BadgeCheck, ShoppingBag } from 'lucide-react';
 import heroBgVideo from '../assets/landing_page_back_video.mp4';
+import person1 from '../assets/person1.jpg';
+import person2 from '../assets/person2.jpg';
+import person3 from '../assets/person3.jpg';
+import person4 from '../assets/person4.jpg';
+import person5 from '../assets/person5.jpg';
 
 const categories = [
   { name: 'Study Helper', icon: BookOpen, color: '#0EA878', bg: '#E8FFF8', count: 120, desc: 'Tutoring & exam prep' },
@@ -34,7 +39,7 @@ const MOCK_FEATURED = [
     _id: '1',
     title: 'Python Debugging & Full CS Tutoring',
     description: 'Struggling with DSA, OOP, or Python assignments? I offer 1-on-1 sessions, assignment help, and project reviews. 3 semesters of TA experience.',
-    seller: { name: 'Alex M.', department: "Computer Science '25" },
+    seller: { name: 'Arjun Mehta', department: "Computer Science '25", avatar: person2 },
     rating: 4.9, reviewCount: 28, price: 499,
     category: 'Tech & Coding',
     tags: ['Python', 'DSA', 'Debugging'],
@@ -45,7 +50,7 @@ const MOCK_FEATURED = [
     _id: '2',
     title: 'Logo & Brand Identity Design for Your Club',
     description: 'Professional logo, color palette, and brand guide for your student club or startup. Unlimited revisions in 48 hours — guaranteed satisfaction.',
-    seller: { name: 'Sarah T.', department: "Fine Arts '26" },
+    seller: { name: 'Priya Patel', department: "Fine Arts '26", avatar: person1 },
     rating: 5.0, reviewCount: 17, price: 599,
     category: 'Art & Design',
     tags: ['Logo', 'Branding', 'Figma'],
@@ -56,7 +61,7 @@ const MOCK_FEATURED = [
     _id: '3',
     title: 'Calculus II & Linear Algebra Tutoring',
     description: 'Gold medallist in Engineering Mathematics. Covers limits, integrals, eigen values, and exam prep. Session recordings provided after every class.',
-    seller: { name: 'David K.', department: "Mathematics '25" },
+    seller: { name: 'Rahul Sharma', department: "Mathematics '25", avatar: person3 },
     rating: 4.8, reviewCount: 34, price: 449,
     category: 'Study Helper',
     tags: ['Calculus', 'Linear Algebra', 'Exam Prep'],
@@ -67,7 +72,7 @@ const MOCK_FEATURED = [
     _id: '4',
     title: 'Professional SOP & Resume Writing',
     description: 'Ex-placement committee member. I craft ATS-friendly resumes, cover letters, and SOPs that get shortlisted. 85%+ placement success rate among my clients.',
-    seller: { name: 'Priya R.', department: "MBA '25" },
+    seller: { name: 'Anjali Gupta', department: "MBA '25", avatar: person4 },
     rating: 4.9, reviewCount: 41, price: 349,
     category: 'Writing & CV',
     tags: ['Resume', 'SOP', 'Cover Letter'],
@@ -78,7 +83,7 @@ const MOCK_FEATURED = [
     _id: '5',
     title: 'Data Analysis & Excel Dashboard',
     description: 'I build clean Excel / Google Sheets dashboards, run statistical analyses, and create visualisations for your project or internship report. SPSS & R available.',
-    seller: { name: 'Rohan S.', department: "Statistics '26" },
+    seller: { name: 'Divya Nair', department: "Statistics '26", avatar: person5 },
     rating: 4.7, reviewCount: 22, price: 699,
     category: 'Research & Data',
     tags: ['Excel', 'Data Viz', 'Statistics'],
@@ -89,7 +94,7 @@ const MOCK_FEATURED = [
     _id: '6',
     title: 'Acoustic Guitar Lessons — Beginner to Intermediate',
     description: 'Certified ABRSM Grade 6 guitarist. I teach chords, fingerpicking, strumming techniques, and song covers. Flexible slots, patient teaching style.',
-    seller: { name: 'Meera V.', department: "Music '27" },
+    seller: { name: 'Karan Singh', department: "Music '27", avatar: person3 },
     rating: 5.0, reviewCount: 9, price: 299,
     category: 'Other Talents',
     tags: ['Guitar', 'Music', 'Beginner-friendly'],
@@ -618,13 +623,21 @@ export default function Landing() {
                   {/* Image area with inner padding */}
                   <div className="p-3 pb-0">
                     <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                      <div className="w-full h-full flex items-center justify-center"
-                        style={{ background: catBg[service.category] || 'linear-gradient(135deg,#EEF0FF,#DDE0FF)' }}>
-                        <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg"
-                          style={{ background: color }}>
-                          {initials}
+                      {service.seller?.avatar ? (
+                        <img
+                          src={service.seller.avatar}
+                          alt={service.seller.name}
+                          className="w-full h-full object-cover object-top"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"
+                          style={{ background: catBg[service.category] || 'linear-gradient(135deg,#EEF0FF,#DDE0FF)' }}>
+                          <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg"
+                            style={{ background: color }}>
+                            {initials}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       {/* Category badge */}
                       <span className="absolute top-2.5 left-2.5 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm"
                         style={{ background: 'rgba(255,255,255,0.85)', color }}>
