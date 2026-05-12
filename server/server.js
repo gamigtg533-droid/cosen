@@ -44,6 +44,7 @@ app.use('/api/messages',      require('./routes/messages'));
 app.use('/api/conversations',  require('./routes/conversations'));
 app.use('/api/payments',      require('./routes/payments'));
 app.use('/api/upload',        require('./routes/upload'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // ── 404 handler ─────────────────────────────────────────────
 app.use((req, res) => {

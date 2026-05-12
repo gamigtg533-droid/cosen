@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { supabase } = require('../config/db');
 const sendEmail = require('../utils/sendEmail');
+const createNotification = require('../utils/createNotification');
 
 const COMMISSION = 0.10; // 10% platform fee
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
@@ -222,6 +223,14 @@ router.post('/', protect, async (req, res) => {
         orderId: mapped._id,
         price: mapped.price,
       });
+      // In-app notification for seller
+      createNotification({
+        userId: mapped.seller._id,
+        type: 'order_placed',
+        title: '🛒 New Order Received!',
+        body: `${mapped.buyer.name} placed an order for "${mapped.service?.title || 'your service'}".`,
+        link: `/orders/${mapped._id}`,
+      });
     }
     res.status(201).json({ success: true, order: mapped });
   } catch (error) {
@@ -323,6 +332,14 @@ router.put('/:id/deliver', protect, async (req, res) => {
         orderId: req.params.id,
         price: order.price,
       });
+      // In-app notification for buyer
+      createNotification({
+        userId: order.buyer.id,
+        type: 'order_delivered',
+        title: '📦 Order Delivered!',
+        body: `"${order.service?.title || 'Your order'}" has been delivered. Please review and confirm.`,
+        link: `/orders/${req.params.id}`,
+      });
     }
     res.status(200).json({ success: true, order: mapOrder(updated) });
   } catch (error) {
@@ -370,6 +387,14 @@ router.put('/:id/complete', protect, async (req, res) => {
         orderId: req.params.id,
         price: order.price,
       });
+      // In-app notification for seller
+      createNotification({
+        userId: order.seller.id,
+        type: 'order_completed',
+        title: '✅ Payment Released!',
+        body: `${req.user.name} confirmed delivery of "${order.service?.title || 'your service'}". Earnings released!`,
+        link: `/orders/${req.params.id}`,
+      });
     }
     res.status(200).json({ success: true, order: mapOrder(updated) });
   } catch (error) {
@@ -416,6 +441,23 @@ router.put('/:id/dispute', protect, async (req, res) => {
       orderId: req.params.id,
       price: order.price,
     });
+    // In-app notifications for both parties
+    createNotification({
+      userId: req.user._id,
+      type: 'order_disputed',
+      title: '⚠️ Dispute Opened',
+      body: `Your dispute for "${order.service?.title || 'the order'}" has been received. We will review it shortly.`,
+      link: `/orders/${req.params.id}`,
+    });
+    if (order.seller?.id) {
+      createNotification({
+        userId: order.seller.id,
+        type: 'order_disputed',
+        title: '⚠️ Dispute Raised',
+        body: `${req.user.name} raised a dispute on "${order.service?.title || 'your order'}".`,
+        link: `/orders/${req.params.id}`,
+      });
+    }
     res.status(200).json({ success: true, order: mapOrder(updated) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });

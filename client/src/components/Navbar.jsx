@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronRight, Menu, X, BookOpen, Code, Palette, PenTool,
   Database, Music, LayoutDashboard, Search, LogIn, LogOut, User as UserIcon,
-  MessageCircle, PlusSquare
+  MessageCircle, PlusSquare, Bell
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import BrandLogo from './BrandLogo';
@@ -37,6 +37,10 @@ export default function Navbar() {
 
   const { user, logout } = useAuthStore();
   const [unreadDMs, setUnreadDMs] = useState(0);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef(null);
 
   // Poll unread DM count every 30s
   useEffect(() => {
@@ -52,6 +56,73 @@ export default function Navbar() {
     return () => clearInterval(id);
   }, [user]);
 
+  // Poll notification count every 30s
+  useEffect(() => {
+    if (!user) { setUnreadNotifs(0); setNotifications([]); return; }
+    const fetchCount = async () => {
+      try {
+        const { data } = await api.get('/notifications/count');
+        setUnreadNotifs(data.unread || 0);
+      } catch { /* ignore */ }
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, 30000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  // Fetch full notifications when bell is opened
+  const openBell = async () => {
+    setBellOpen(prev => !prev);
+    if (!bellOpen) {
+      try {
+        const { data } = await api.get('/notifications');
+        setNotifications(data.notifications || []);
+      } catch { /* ignore */ }
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadNotifs(0);
+    } catch { /* ignore */ }
+  };
+
+  const handleNotifClick = async (notif) => {
+    try { await api.patch(`/notifications/${notif.id}/read`); } catch { /* ignore */ }
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+    setUnreadNotifs(prev => Math.max(0, prev - (notif.is_read ? 0 : 1)));
+    setBellOpen(false);
+    if (notif.link) navigate(notif.link);
+  };
+
+  // Close bell on outside click
+  useEffect(() => {
+    const handler = (e) => { if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const timeAgo = (dateStr) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
+
+  const notifIcon = (type) => {
+    if (type === 'order_placed')    return '🛒';
+    if (type === 'order_delivered') return '📦';
+    if (type === 'order_completed') return '✅';
+    if (type === 'order_disputed')  return '⚠️';
+    if (type === 'review_received') return '⭐';
+    return '🔔';
+  };
+
   // Hide 'How It Works' for logged-in users — they already know the flow
   const visibleLinks = user
     ? navLinks.filter(link => link.label !== 'How It Works')
@@ -63,7 +134,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => { setMobileOpen(false); setCategoriesOpen(false); setUserMenuOpen(false); }, [location]);
+  useEffect(() => { setMobileOpen(false); setCategoriesOpen(false); setUserMenuOpen(false); setBellOpen(false); }, [location]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -210,7 +281,69 @@ export default function Navbar() {
                     </span>
                   )}
                 </Link>
+
+                {/* Notification Bell */}
+                <div className="relative" ref={bellRef}>
+                  <button
+                    id="nav-bell"
+                    onClick={openBell}
+                    className="relative p-2 rounded-lg transition-colors"
+                    style={{ color: bellOpen ? '#635BFF' : '#425466', background: bellOpen ? '#F6F9FC' : 'transparent' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#F6F9FC'; e.currentTarget.style.color = '#635BFF'; }}
+                    onMouseLeave={e => { if (!bellOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#425466'; } }}
+                    title="Notifications"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadNotifs > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                        {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                      </span>
+                    )}
+                  </button>
+                  {bellOpen && (
+                    <div
+                      className="absolute top-full right-0 mt-2 rounded-2xl overflow-hidden"
+                      style={{ width: '340px', background: '#fff', border: '1px solid #E6EBF1', boxShadow: '0 20px 40px -8px rgba(50,50,93,0.18)', zIndex: 60 }}
+                    >
+                      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#E6EBF1' }}>
+                        <span className="font-bold text-stripe-slate text-sm">Notifications</span>
+                        {unreadNotifs > 0 && (
+                          <button onClick={markAllRead} className="text-xs font-semibold text-stripe-purple hover:underline">Mark all read</button>
+                        )}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y" style={{ borderColor: '#F6F9FC' }}>
+                        {notifications.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-center">
+                            <Bell className="h-8 w-8 text-stripe-muted opacity-30 mb-2" />
+                            <p className="text-sm text-stripe-muted">No notifications yet</p>
+                            <p className="text-xs text-stripe-muted mt-1">Order updates & reviews appear here</p>
+                          </div>
+                        ) : (
+                          notifications.map(n => (
+                            <button
+                              key={n.id}
+                              onClick={() => handleNotifClick(n)}
+                              className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-stripe-bg"
+                              style={{ background: n.is_read ? '#fff' : '#635BFF08' }}
+                            >
+                              <span className="text-lg shrink-0 mt-0.5">{notifIcon(n.type)}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className={`text-sm leading-snug ${n.is_read ? 'text-stripe-steel font-medium' : 'text-stripe-slate font-bold'}`}>
+                                  {n.title}
+                                </div>
+                                <div className="text-xs text-stripe-muted mt-0.5 line-clamp-2">{n.body}</div>
+                                <div className="text-[10px] text-stripe-muted mt-1">{timeAgo(n.created_at)}</div>
+                              </div>
+                              {!n.is_read && <span className="w-2 h-2 rounded-full bg-stripe-purple shrink-0 mt-1.5" />}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
+
 
               <Link
                 to="/browse"

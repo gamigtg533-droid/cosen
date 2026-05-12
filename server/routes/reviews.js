@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { supabase } = require('../config/db');
+const createNotification = require('../utils/createNotification');
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -70,6 +71,15 @@ router.post('/', protect, async (req, res) => {
 
     // Mark order as reviewed
     await supabase.from('orders').update({ is_reviewed: true }).eq('id', order.id);
+
+    // Notify seller about the review (non-blocking)
+    createNotification({
+      userId: order.seller_id,
+      type: 'review_received',
+      title: `⭐ New ${Number(rating)}-Star Review!`,
+      body: `${req.user.name} left you a ${Number(rating)}-star review.`,
+      link: `/profile/${order.seller_id}`,
+    });
 
     res.status(201).json({ success: true, review: mapReview(review) });
   } catch (error) {
