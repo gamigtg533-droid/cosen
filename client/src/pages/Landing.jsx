@@ -9,6 +9,7 @@ import person2 from '../assets/person2.jpg';
 import person3 from '../assets/person3.jpg';
 import person4 from '../assets/person4.jpg';
 import person5 from '../assets/person5.jpg';
+import person6 from '../assets/person6.jpg';
 
 const categories = [
   { name: 'Study Helper', icon: BookOpen, color: '#0EA878', bg: '#E8FFF8', count: 120, desc: 'Tutoring & exam prep' },
@@ -94,7 +95,7 @@ const MOCK_FEATURED = [
     _id: '6',
     title: 'Acoustic Guitar Lessons — Beginner to Intermediate',
     description: 'Certified ABRSM Grade 6 guitarist. I teach chords, fingerpicking, strumming techniques, and song covers. Flexible slots, patient teaching style.',
-    seller: { name: 'Karan Singh', department: "Music '27", avatar: person3 },
+    seller: { name: 'Meera Iyer', department: "Music '27", avatar: person6 },
     rating: 5.0, reviewCount: 9, price: 299,
     category: 'Other Talents',
     tags: ['Guitar', 'Music', 'Beginner-friendly'],
