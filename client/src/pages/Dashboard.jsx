@@ -506,52 +506,51 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
 
-    {/* ── Delete Confirmation Modal ── */}
-    {confirmDelete && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: 'rgba(10,37,64,0.45)', backdropFilter: 'blur(4px)' }}
-        onClick={() => setConfirmDelete(null)}
-      >
+      {/* ── Delete Confirmation Modal ── */}
+      {confirmDelete && (
         <div
-          className="bg-white rounded-2xl shadow-2xl p-7 w-full max-w-sm"
-          onClick={e => e.stopPropagation()}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(10,37,64,0.45)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setConfirmDelete(null)}
         >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-7 w-full max-w-sm"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-stripe-slate text-base">Delete Service?</h3>
+                <p className="text-xs text-stripe-muted">This action cannot be undone</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-stripe-slate text-base">Delete Service?</h3>
-              <p className="text-xs text-stripe-muted">This action cannot be undone</p>
+            <p className="text-sm text-stripe-steel mb-6">
+              Are you sure you want to delete <strong className="text-stripe-slate">{confirmDelete.title}</strong>?
+              All associated data will be permanently removed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 rounded-xl border font-semibold text-sm text-stripe-muted hover:bg-stripe-bg transition-all"
+                style={{ borderColor: '#E6EBF1' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteService(confirmDelete)}
+                disabled={deletingId === confirmDelete._id}
+                className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-60"
+                style={{ background: '#EF4444' }}
+              >
+                {deletingId === confirmDelete._id ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
-          </div>
-          <p className="text-sm text-stripe-steel mb-6">
-            Are you sure you want to delete <strong className="text-stripe-slate">{confirmDelete.title}</strong>?
-            All associated data will be permanently removed.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="flex-1 py-2.5 rounded-xl border font-semibold text-sm text-stripe-muted hover:bg-stripe-bg transition-all"
-              style={{ borderColor: '#E6EBF1' }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleDeleteService(confirmDelete)}
-              disabled={deletingId === confirmDelete._id}
-              className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-60"
-              style={{ background: '#EF4444' }}
-            >
-              {deletingId === confirmDelete._id ? 'Deleting…' : 'Delete'}
-            </button>
           </div>
         </div>
-      </div>
-    )}
-  </div>
+      )}
+    </div>
   );
 }
