@@ -128,28 +128,22 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  // ── Phone OTP ──────────────────────────────────────────
-  sendPhoneOtp: async (phone) => {
+  // ── Firebase Phone Verification ────────────────────────
+  linkFirebasePhone: async (idToken) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await api.post('/auth/send-phone-otp', { phone });
-      set({ loading: false });
-      return { success: true, message: data.message };
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to send OTP';
-      set({ error: msg, loading: false });
-      return { success: false, message: msg };
-    }
-  },
+      const { data } = await api.post('/auth/firebase-phone-verify', { idToken });
+      
+      // Update local user state
+      const currentUser = get().user;
+      if (currentUser) {
+        set({ user: { ...currentUser, isPhoneVerified: true } });
+      }
 
-  verifyPhoneOtp: async (otp) => {
-    set({ loading: true, error: null });
-    try {
-      const { data } = await api.post('/auth/verify-phone-otp', { otp });
       set({ loading: false });
       return { success: true, message: data.message };
     } catch (err) {
-      const msg = err.response?.data?.message || 'OTP verification failed';
+      const msg = err.response?.data?.message || 'Phone linking failed';
       set({ error: msg, loading: false });
       return { success: false, message: msg };
     }

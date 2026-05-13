@@ -8,7 +8,7 @@ const { protect } = require('../middleware/auth');
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 const sendEmail = require('../utils/sendEmail');
-const sendSms   = require('../utils/sendSms');
+
 
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -507,32 +507,33 @@ router.post('/resend-otp', protect, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// POST /api/auth/send-phone-otp
+// POST /api/auth/firebase-phone-verify
 // ─────────────────────────────────────────────────────────────
-router.post('/send-phone-otp', protect, async (req, res) => {
+router.post('/firebase-phone-verify', protect, async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'Firebase ID token is required.' });
+    }
+
+    const admin = require('../config/firebaseAdmin');
+    if (!admin) {
+      return res.status(500).json({ success: false, message: 'Firebase Admin not configured on server.' });
+    }
+
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const phone = decodedToken.phone_number;
 
     if (!phone) {
-      return res.status(400).json({ success: false, message: 'Phone number is required.' });
+      return res.status(400).json({ success: false, message: 'Token does not contain a phone number.' });
     }
 
-    // Validate 10-digit Indian number
-    const cleaned = phone.replace(/\s/g, '').replace(/^\+91/, '');
-    if (!/^[6-9]\d{9}$/.test(cleaned)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Enter a valid 10-digit Indian mobile number (starting with 6–9).',
-      });
-    }
-
-    const e164 = `+91${cleaned}`;
-
-    // Check if phone is already used by another user
+    // Check if phone is already used by another verified user
     const { data: existing } = await supabase
       .from('users')
       .select('id')
-      .eq('phone', e164)
+      .eq('phone', phone)
       .eq('is_phone_verified', true)
       .neq('id', req.user._id)
       .maybeSingle();
@@ -541,77 +542,21 @@ router.post('/send-phone-otp', protect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'This phone number is already linked to another account.' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
-    const expire = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 mins
-
+    // Update the user in Supabase
     await supabase
       .from('users')
       .update({
-        phone: e164,
-        phone_otp_token: hashedOtp,
-        phone_otp_expire: expire,
-        is_phone_verified: false,
-      })
-      .eq('id', req.user._id);
-
-    // Send response immediately
-    res.status(200).json({ success: true, message: `OTP sent to +91${cleaned}.` });
-
-    // Send SMS in background
-    sendSms({
-      to: e164,
-      content: `Your Cosen verification code is: ${otp}. Valid for 10 minutes. Do not share this with anyone.`,
-    }).catch(err => {
-      console.error('Background SMS send failed. OTP was:', otp, err.message);
-    });
-
-  } catch (error) {
-    console.error('Send phone OTP error:', error);
-    res.status(500).json({ success: false, message: 'Server error sending OTP. Please try again.' });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────
-// POST /api/auth/verify-phone-otp
-// ─────────────────────────────────────────────────────────────
-router.post('/verify-phone-otp', protect, async (req, res) => {
-  try {
-    const { otp } = req.body;
-    if (!otp) {
-      return res.status(400).json({ success: false, message: 'OTP is required.' });
-    }
-
-    const hashedOtp = crypto.createHash('sha256').update(otp.toString()).digest('hex');
-
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', req.user._id)
-      .eq('phone_otp_token', hashedOtp)
-      .gt('phone_otp_expire', new Date().toISOString())
-      .maybeSingle();
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired OTP. Please request a new one.',
-      });
-    }
-
-    await supabase
-      .from('users')
-      .update({
+        phone: phone,
         is_phone_verified: true,
         phone_otp_token: null,
         phone_otp_expire: null,
       })
-      .eq('id', user.id);
+      .eq('id', req.user._id);
 
-    res.status(200).json({ success: true, message: 'Phone number verified successfully!' });
+    res.status(200).json({ success: true, message: 'Phone number verified successfully via Firebase!' });
   } catch (error) {
-    console.error('Verify phone OTP error:', error);
-    res.status(500).json({ success: false, message: 'Server error during OTP verification.' });
+    console.error('Verify Firebase Phone error:', error);
+    res.status(401).json({ success: false, message: 'Invalid or expired Firebase token.' });
   }
 });
 

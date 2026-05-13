@@ -7,6 +7,8 @@ import {
   User, Shield, Share2, FileText, Camera, Phone, KeyRound, AlertCircle,
 } from 'lucide-react';
 import PrivacyModal from '../components/PrivacyModal';
+import { auth } from '../lib/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 const STEPS = [
   { label: 'Basic Info',   icon: User },
@@ -18,7 +20,7 @@ const STEPS = [
 export default function Onboarding() {
   const navigate = useNavigate();
   const {
-    user, completeOnboarding, sendPhoneOtp, verifyPhoneOtp,
+    user, completeOnboarding, linkFirebasePhone,
     loading, error: authError, clearError,
   } = useAuthStore();
 
@@ -99,6 +101,15 @@ export default function Onboarding() {
     }
   };
 
+  /* ── Firebase Recaptcha ── */
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+      });
+    }
+  };
+
   /* ── Send OTP ── */
   const handleSendOtp = async () => {
     setPhoneError('');
@@ -108,14 +119,25 @@ export default function Onboarding() {
       return;
     }
     setSendingOtp(true);
-    const result = await sendPhoneOtp(cleaned);
-    setSendingOtp(false);
-    if (result.success) {
+    setupRecaptcha();
+
+    try {
+      const e164 = `+91${cleaned}`;
+      const confirmationResult = await signInWithPhoneNumber(auth, e164, window.recaptchaVerifier);
+      window.confirmationResult = confirmationResult;
       setOtpSent(true);
       setOtpError('');
       setResendCooldown(30);
-    } else {
-      setPhoneError(result.message || 'Failed to send OTP. Please try again.');
+    } catch (err) {
+      console.error(err);
+      setPhoneError(err.message || 'Failed to send OTP. Please try again.');
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then(widgetId => {
+          grecaptcha.reset(widgetId);
+        });
+      }
+    } finally {
+      setSendingOtp(false);
     }
   };
 
@@ -127,14 +149,24 @@ export default function Onboarding() {
       return;
     }
     setVerifyingOtp(true);
-    const result = await verifyPhoneOtp(otp);
-    setVerifyingOtp(false);
-    if (result.success) {
-      setPhoneVerified(true);
-      setOtpError('');
-      setLocalError('');
-    } else {
-      setOtpError(result.message || 'Invalid OTP. Please try again.');
+    
+    try {
+      const result = await window.confirmationResult.confirm(otp);
+      const idToken = await result.user.getIdToken();
+      const res = await linkFirebasePhone(idToken);
+      
+      if (res.success) {
+        setPhoneVerified(true);
+        setOtpError('');
+        setLocalError('');
+      } else {
+        setOtpError(res.message || 'Verification failed on server.');
+      }
+    } catch (err) {
+      console.error(err);
+      setOtpError(err.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -271,6 +303,9 @@ export default function Onboarding() {
                 <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
                   We'll send a 6-digit OTP to verify your number. Indian numbers only (+91).
                 </p>
+
+                {/* Invisible Recaptcha Container */}
+                <div id="recaptcha-container"></div>
 
                 {phoneVerified ? (
                   /* ✅ Verified state */
