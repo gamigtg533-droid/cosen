@@ -1,41 +1,43 @@
 const axios = require('axios');
 
 /**
- * Sends a transactional SMS via Brevo SMS API.
- * @param {object} options
- * @param {string} options.to   - Phone number in E.164 format, e.g. "+919876543210"
- * @param {string} options.content - SMS body text (max 160 chars for single SMS)
+ * Sends an OTP using the Fast2SMS API.
+ * @param {string} to - The 10-digit mobile number.
+ * @param {string} otp - The numeric OTP to send.
  */
-const sendSms = async ({ to, content }) => {
-  const apiKey = process.env.BREVO_API_KEY;
-  const sender = process.env.SMS_SENDER_NAME || 'COSEN';
-
-  if (!apiKey) {
-    throw new Error('BREVO_API_KEY is not set.');
+const sendSms = async (to, otp) => {
+  if (!process.env.FAST2SMS_API_KEY) {
+    console.warn('⚠️ Fast2SMS API Key is missing. Check your .env file.');
+    return;
   }
 
-  const payload = {
-    sender,
-    recipient: to,
-    content,
-    type: 'transactional',
-  };
-
-  const response = await axios.post(
-    'https://api.brevo.com/v3/transactionalSMS/sms',
-    payload,
-    {
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json',
-        accept: 'application/json',
+  try {
+    const response = await axios.post(
+      'https://www.fast2sms.com/dev/bulkV2',
+      {
+        route: 'otp',
+        variables_values: otp,
+        numbers: to,
       },
-      timeout: 10000,
-    }
-  );
+      {
+        headers: {
+          authorization: process.env.FAST2SMS_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-  console.log(`✅ Brevo SMS: sent to ${to} — reference: ${response.data.reference}`);
-  return response.data;
+    if (response.data.return === false) {
+      console.error('❌ Fast2SMS failed:', response.data.message);
+      throw new Error(response.data.message[0] || 'Fast2SMS error');
+    }
+
+    console.log('✅ OTP sent via Fast2SMS to', to);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error sending SMS via Fast2SMS:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 module.exports = sendSms;
