@@ -8,6 +8,7 @@ const { protect } = require('../middleware/auth');
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 const sendEmail = require('../utils/sendEmail');
+const sendSms   = require('../utils/sendSms');
 
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -347,15 +348,30 @@ router.put('/onboarding', protect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'You must accept the platform agreement.' });
     }
 
-    if (!dob || !idCardImageUrl) {
-      return res.status(400).json({ success: false, message: 'DOB and ID Card Image are required.' });
+    if (!dob) {
+      return res.status(400).json({ success: false, message: 'Date of Birth is required.' });
+    }
+
+    // Phone must be verified before completing onboarding
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('phone_verified, role')
+      .eq('id', req.user._id)
+      .single();
+
+    if (!currentUser?.phone_verified) {
+      return res.status(400).json({ success: false, message: 'Phone number must be verified before completing your profile.' });
+    }
+
+    // Profile photo is mandatory for sellers and both
+    if ((currentUser.role === 'seller' || currentUser.role === 'both') && !avatarUrl) {
+      return res.status(400).json({ success: false, message: 'A profile photo is required for sellers. Please upload one.' });
     }
 
     const updateData = {
       dob,
       department: department || '',
       year_of_study: yearOfStudy || '',
-      id_card_image_url: idCardImageUrl,
       instagram_url: instagramUrl || '',
       facebook_url: facebookUrl || '',
       youtube_url: youtubeUrl || '',
@@ -482,5 +498,113 @@ router.post('/resend-otp', protect, async (req, res) => {
   }
 });
 
-module.exports = router;
+// ─────────────────────────────────────────────────────────────
+// POST /api/auth/send-phone-otp
+// ─────────────────────────────────────────────────────────────
+router.post('/send-phone-otp', protect, async (req, res) => {
+  try {
+    const { phone } = req.body;
 
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number is required.' });
+    }
+
+    // Validate 10-digit Indian number
+    const cleaned = phone.replace(/\s/g, '').replace(/^\+91/, '');
+    if (!/^[6-9]\d{9}$/.test(cleaned)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enter a valid 10-digit Indian mobile number (starting with 6–9).',
+      });
+    }
+
+    const e164 = `+91${cleaned}`;
+
+    // Check if phone is already used by another user
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('phone', e164)
+      .eq('phone_verified', true)
+      .neq('id', req.user._id)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'This phone number is already linked to another account.' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+    const expire = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 mins
+
+    await supabase
+      .from('users')
+      .update({
+        phone: e164,
+        phone_otp_token: hashedOtp,
+        phone_otp_expire: expire,
+        phone_verified: false,
+      })
+      .eq('id', req.user._id);
+
+    // Send response immediately
+    res.status(200).json({ success: true, message: `OTP sent to +91${cleaned}.` });
+
+    // Send SMS in background
+    sendSms({
+      to: e164,
+      content: `Your Cosen verification code is: ${otp}. Valid for 10 minutes. Do not share this with anyone.`,
+    }).catch(err => {
+      console.error('Background SMS send failed. OTP was:', otp, err.message);
+    });
+
+  } catch (error) {
+    console.error('Send phone OTP error:', error);
+    res.status(500).json({ success: false, message: 'Server error sending OTP. Please try again.' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/auth/verify-phone-otp
+// ─────────────────────────────────────────────────────────────
+router.post('/verify-phone-otp', protect, async (req, res) => {
+  try {
+    const { otp } = req.body;
+    if (!otp) {
+      return res.status(400).json({ success: false, message: 'OTP is required.' });
+    }
+
+    const hashedOtp = crypto.createHash('sha256').update(otp.toString()).digest('hex');
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', req.user._id)
+      .eq('phone_otp_token', hashedOtp)
+      .gt('phone_otp_expire', new Date().toISOString())
+      .maybeSingle();
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP. Please request a new one.',
+      });
+    }
+
+    await supabase
+      .from('users')
+      .update({
+        phone_verified: true,
+        phone_otp_token: null,
+        phone_otp_expire: null,
+      })
+      .eq('id', user.id);
+
+    res.status(200).json({ success: true, message: 'Phone number verified successfully!' });
+  } catch (error) {
+    console.error('Verify phone OTP error:', error);
+    res.status(500).json({ success: false, message: 'Server error during OTP verification.' });
+  }
+});
+
+module.exports = router;
