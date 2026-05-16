@@ -113,7 +113,15 @@ export default function Navbar() {
 
   // Close bell on outside click
   useEffect(() => {
-    const handler = (e) => { if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false); };
+    const handler = (e) => { 
+      const clickedDesktopBell = bellRef.current && bellRef.current.contains(e.target);
+      const clickedMobileBell = e.target.closest('#mobile-nav-bell');
+      const clickedMobileSheet = e.target.closest('#mobile-bell-sheet');
+      
+      if (!clickedDesktopBell && !clickedMobileBell && !clickedMobileSheet) {
+        setBellOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -619,6 +627,7 @@ export default function Navbar() {
           />
           {/* Sheet */}
           <div
+            id="mobile-bell-sheet"
             className="relative rounded-t-3xl overflow-hidden"
             style={{ background: '#fff', maxHeight: '70vh', boxShadow: '0 -8px 40px rgba(50,50,93,0.18)' }}
           >
@@ -648,12 +657,14 @@ export default function Navbar() {
                 </div>
               ) : (
                 notifications.map(n => {
-                  const NotifWrapper = n.link ? Link : 'button';
                   return (
-                    <NotifWrapper
+                    <button
                       key={n.id}
-                      to={n.link || undefined}
-                      onClick={() => handleNotifClick(n)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (n.link) navigate(n.link);
+                        handleNotifClick(n);
+                      }}
                       className="w-full flex items-start gap-3 px-5 py-4 text-left"
                       style={{ background: n.is_read ? '#fff' : '#635BFF08', textDecoration: 'none' }}
                     >
@@ -666,7 +677,7 @@ export default function Navbar() {
                         <div className="text-[10px] text-stripe-muted mt-1">{timeAgo(n.created_at)}</div>
                       </div>
                       {!n.is_read && <span className="w-2 h-2 rounded-full bg-stripe-purple shrink-0 mt-1.5" />}
-                    </NotifWrapper>
+                    </button>
                   );
                 })
               )}

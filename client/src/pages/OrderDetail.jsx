@@ -29,6 +29,7 @@ export default function OrderDetail() {
   const [sending,    setSending]    = useState(false);
   const [error,      setError]      = useState('');
   const [connected,  setConnected]  = useState(false);
+  const [isOtherPartyOnline, setIsOtherPartyOnline] = useState(false);
 
   // Review Modal State
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -67,7 +68,10 @@ export default function OrderDetail() {
 
   /* ── Socket.io ──────────────────────────────────────── */
   useEffect(() => {
-    if (!user) return;
+    if (!user || !order) return;
+
+    const isBuyer = order.buyer._id === user._id;
+    const otherPartyId = isBuyer ? order.seller._id : order.buyer._id;
 
     const socket = io(SOCKET_URL, {
       withCredentials: true,
@@ -75,8 +79,22 @@ export default function OrderDetail() {
     });
     socketRef.current = socket;
 
-    socket.on('connect',    () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    socket.on('connect', () => {
+      socket.emit('register_user', user._id);
+      socket.emit('get_online_users');
+    });
+
+    socket.on('online_users_list', (users) => {
+      if (users.includes(otherPartyId)) setIsOtherPartyOnline(true);
+    });
+
+    socket.on('user_online', (userId) => {
+      if (userId === otherPartyId) setIsOtherPartyOnline(true);
+    });
+
+    socket.on('user_offline', (userId) => {
+      if (userId === otherPartyId) setIsOtherPartyOnline(false);
+    });
 
     socket.emit('join_order', id);
 
@@ -90,7 +108,7 @@ export default function OrderDetail() {
     });
 
     return () => socket.disconnect();
-  }, [id, user]);
+  }, [id, user, order]);
 
   /* ── Auto-scroll ────────────────────────────────────── */
   useEffect(() => {
@@ -310,8 +328,8 @@ export default function OrderDetail() {
                   </div>
                   <span
                     className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
-                    style={{ background: connected ? '#22c55e' : '#94a3b8' }}
-                    title={connected ? 'Connected' : 'Offline'}
+                    style={{ background: isOtherPartyOnline ? '#22c55e' : '#94a3b8' }}
+                    title={isOtherPartyOnline ? 'Online' : 'Offline'}
                   />
                 </div>
                 <div>
