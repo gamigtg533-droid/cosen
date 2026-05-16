@@ -94,6 +94,13 @@
 - **Dashboard Page** — buyer active orders, seller incoming orders, earnings, quick links
 - **Verify Email Page** — OTP entry page after registration
 
+### Phase 8 — Negotiable Services & Advanced UX ✅
+- **Dynamic Pricing Negotiation** — Sellers can post services as "Negotiable" (e.g. Study Helper)
+- **Pending Negotiation Workflow** — Orders start in `pending_negotiation` status; sellers set the final locked price in the chat UI
+- **Razorpay Pending Payment** — Buyers review locked price and pay securely to initialize the order to `inProgress`
+- **Sub-Categorization** — Added specialized sub-categories (Assignment, Tutorial, Manual, Custom) to service creation
+- **In-App Notifications** — Bell icon drop-down with unread status counting and navigation redirection
+
 ---
 
 ## 🔧 Production Bugs Fixed (This Session — May 2026)
@@ -109,6 +116,10 @@
 | Email not arriving on Railway | Railway blocks outbound SMTP (ports 25/465/587) | Switched to **Brevo HTTP API** |
 | Landing page shown to logged-in users | No redirect check on `/` | Added `useEffect` redirect to `/browse` |
 | Post-login goes to `/dashboard` | Hardcoded navigation in Login/Signup | Changed all redirects to `/browse` |
+| Missing order data crashing frontend | Server routes returned flat IDs instead of joining user/service tables | Added `select('*, buyer:users!buyer_id(...), ...')` SQL joins in backend routes |
+| Mobile notifications instantly closing | `document.addEventListener('mousedown')` triggered closing on mobile sheet click | Added DOM ID whitelisting for `mobile-bell-sheet` inside detector |
+| Mobile notifications not navigating | React Router `<Link>` cancelled inside closing timeout | Switched mobile bell wrapper to `<button>` + explicit programmatic `navigate()` hook |
+| Order chat "online" tick always green | Hardcoded to local socket status `connected` | Synced socket events (`online_users_list`, `user_online`) to track other party's presence |
 
 ---
 
