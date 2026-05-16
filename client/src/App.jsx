@@ -1,6 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, useLocation, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import AppLayout from './layouts/AppLayout';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -26,7 +25,7 @@ function TitleUpdater() {
   useEffect(() => {
     const path = location.pathname;
     let title = 'Cosen';
-    
+
     if (path === '/') title = 'Cosen | Campus Marketplace';
     else if (path === '/login') title = 'Log in | Cosen';
     else if (path === '/signup') title = 'Sign up | Cosen';
@@ -41,53 +40,40 @@ function TitleUpdater() {
     else if (path === '/onboarding') title = 'Complete Profile | Cosen';
     else if (path === '/verify-email') title = 'Verify Email | Cosen';
     else if (path === '/forgot-password' || path.startsWith('/reset-password')) title = 'Reset Password | Cosen';
-    
+
     document.title = title;
   }, [location]);
 
   return null;
 }
 
-function PublicLayout() {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-grow pb-16 md:pb-0">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
-
 function App() {
   return (
     <Router>
       <TitleUpdater />
-      <Routes>
-        {/* Public Routes with standard Navbar */}
-        <Route element={<PublicLayout />}>
-          <Route path="/"                element={<Landing />} />
-          <Route path="/login"           element={<Login />} />
-          <Route path="/signup"          element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-        </Route>
-
-        {/* Authenticated Routes with new Sidebar layout */}
-        <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-          <Route path="/browse"          element={<Browse />} />
-          <Route path="/services/new"    element={<PostService />} />
-          <Route path="/services/:id"    element={<ServiceDetail />} />
-          <Route path="/dashboard"       element={<Dashboard />} />
-          <Route path="/profile"         element={<Profile />} />
-          <Route path="/profile/:id"     element={<SellerProfile />} />
-          <Route path="/orders/:id"      element={<OrderDetail />} />
-          <Route path="/payment-success" element={<PaymentSuccess />} />
-          <Route path="/onboarding"      element={<Onboarding />} />
-          <Route path="/verify-email"    element={<VerifyEmail />} />
-          <Route path="/messages"        element={<Messages />} />
-        </Route>
-      </Routes>
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-grow pb-16 md:pb-0">
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
+            <Route path="/services/new" element={<ProtectedRoute><PostService /></ProtectedRoute>} />
+            <Route path="/services/:id" element={<ProtectedRoute><ServiceDetail /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/profile/:id" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+            <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+            <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+          </Routes>
+        </main>
+      </div>
     </Router>
   );
 }
