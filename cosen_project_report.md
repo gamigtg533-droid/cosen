@@ -313,5 +313,28 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 
 ---
 
-*Last updated: May 17, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
+### May 18, 2026 — Art & Design Customization & Portfolio Uplift
+**Objective**: Build a high-fidelity guided posting experience for the **Art & Design** service category, enabling specialized subtypes, automated templates, and work portfolio samples.
 
+**Features Implemented:**
+- **Guided Subtype Selector**: Selecting the *Art & Design* category now displays 7 modern tile cards:
+  - 🎨 Poster & Banner Help
+  - 📊 Presentation Help
+  - 📄 Resume Help
+  - 📸 Instagram Posts & Thumbnails
+  - ▶️ YouTube Thumbnails
+  - 🖥️ Website UI Design
+  - ✨ Custom Service
+- **Smart Description Templates**: Integrated context-aware description templates. When a subtype is clicked, it automatically pre-fills the description with high-quality copy to streamline the onboarding experience for service providers.
+- **Past Work Samples (Portfolio)**: Built a multi-image upload component allowing designers to upload up to 5 portfolio images of past work with high-quality upload feedback and a dynamic preview grid.
+- **Work Gallery UI**: Enhanced `ServiceDetail.jsx` with a dedicated **Past Work Samples** showcase grid featuring hover zoom transitions, backdrop filters, and click-to-view-full overlays.
+- **Backend Services Extension**: Updated `server/routes/services.js` mapper (`mapService`), creator, and updater to fully support arrays under the `portfolio_images` column.
+
+**Difficulties & Solutions:**
+- **Supabase RPC/SQL Limits**: We tried running SQL migrations dynamically using client rpc (`exec_sql`) and direct REST headers, but the hosted REST schema cache was not exposed or preconfigured for administrative functions.
+- **DNS Resolution Blocker**: Browser subagent was unable to resolve `supabase.com` due to container environment restrictions.
+- **Resolution**: Created a local check utility `add_portfolio_column.js` and printed a copy-pasteable SQL block so the user can easily execute the migration directly inside their Supabase dashboard editor.
+
+---
+
+*Last updated: May 18, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
