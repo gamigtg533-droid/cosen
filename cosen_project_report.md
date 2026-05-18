@@ -337,4 +337,17 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 
 ---
 
+### May 18, 2026 — Food Friendship Category Launch & Dynamic Form Customization
+**Objective**: Successfully launch the **Food Friendship** marketplace category to replace the legacy *Writing & CV* category, customize the posting wizard with category-specific options (Veg/Non-Veg/Both), implement dynamic label/placeholder guide systems for Title and Description, and optimize backend validation.
+
+**Features Implemented:**
+- **"Food Friendship" Transition**: Fully retired the "Writing & CV" category and deployed "Food Friendship" (using `UtensilsCrossed` icon) across all components (Navbar, Landing page, Browse marketplace, Signup onboarding, and backend service whitelist).
+- **Specialized Food Flow**: Selecting *Food Friendship* displays a visual dietary selection card where users choose between Veg 🟢, Non-Veg 🔴, and Both 🟡 options.
+- **Dynamic Field Customizer**: Re-engineered Title and Description fields inside the posting wizard:
+  - Both fields now change their label (e.g. *Food Item Name*, *Food Description*) and their helper placeholders dynamically depending on which category is chosen, making the seller signup experience intuitive and contextual.
+- **Low-Price Threshold**: Allowed peers to share cheap meals on campus by adjusting the frontend/backend minimum price threshold to **₹10** exclusively for the *Food Friendship* category, down from the standard ₹50 minimum.
+- **SQL Migration Utilities**: Created a clean PostgreSQL migration script [migrate_food_friendship.sql](file:///c:/Users/HP/OneDrive/Desktop/copy_try/server/supabase/migrate_food_friendship.sql) to add the `'Food Friendship'` enum value to `service_category` and drop/re-add the table's price constraint `CHECK (price >= 10)`.
+
+---
+
 *Last updated: May 18, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
