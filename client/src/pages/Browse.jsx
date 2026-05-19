@@ -10,21 +10,21 @@ const MOCK = [
   { _id: '3', title: 'Calculus 2 & Linear Algebra Study Sessions',       seller: { name: 'David K.', department: "Mathematics '25" },        rating: 4.8, reviewCount: 34, price: 449, category: 'Study Helper',   avatarBg: '#00D4AA', initials: 'DK' },
   { _id: '4', title: 'React & Node.js Web App Development',              seller: { name: 'Priya R.', department: "Computer Science '24" },   rating: 4.7, reviewCount: 12, price: 2999, category: 'Tech & Coding', avatarBg: '#635BFF', initials: 'PR' },
   { _id: '5', title: 'Homemade Paneer Paratha & Campus Tiffin',           seller: { name: 'James L.', department: "Home Science '25" },     rating: 4.9, reviewCount: 21, price: 60, category: 'Food Friendship',  avatarBg: '#FF6348', initials: 'JL' },
-  { _id: '6', title: 'Data Analysis with Python, R & Excel',             seller: { name: 'Meera S.', department: "Statistics '26" },         rating: 4.6, reviewCount: 9,  price: 1999, category: 'Research & Data', avatarBg: '#FF9F43', initials: 'MS' },
+  { _id: '6', title: 'Portraits & Campus Event Shoots',             seller: { name: 'Meera S.', department: "Fine Arts '26" },         rating: 4.8, reviewCount: 9,  price: 999, category: 'Photography', avatarBg: '#00B2FF', initials: 'MS' },
 ];
 
-const CATS = ['All', 'Tech & Coding', 'Art & Design', 'Study Helper', 'Food Friendship', 'Research & Data', 'Other Talents'];
+const CATS = ['All', 'Tech & Coding', 'Art & Design', 'Study Helper', 'Food Friendship', 'Photography', 'Other Talents'];
 const catBg = {
   'Tech & Coding':   'linear-gradient(135deg,#EEF0FF,#DDE0FF)',
   'Art & Design':    'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
   'Study Helper':    'linear-gradient(135deg,#E8FFF8,#C8FFF0)',
   'Food Friendship': 'linear-gradient(135deg,#FFF5F0,#FFE4D6)',
-  'Research & Data': 'linear-gradient(135deg,#FFF8EE,#FFE8CC)',
+  'Photography':     'linear-gradient(135deg,#EAF8FF,#CBEFFF)',
   'Other Talents':   'linear-gradient(135deg,#F8F0FF,#EEDDFF)',
 };
 const catColor = {
   'Tech & Coding': '#635BFF', 'Art & Design': '#FF6B9D', 'Study Helper': '#00D4AA',
-  'Food Friendship': '#FF6348', 'Research & Data': '#FF9F43', 'Other Talents': '#A855F7',
+  'Food Friendship': '#FF6348', 'Photography': '#00B2FF', 'Other Talents': '#A855F7',
 };
 
 export default function Browse() {

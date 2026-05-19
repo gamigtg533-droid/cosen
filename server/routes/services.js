@@ -132,7 +132,7 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'All required fields must be provided' });
     }
 
-    const validCategories = ['Study Helper', 'Tech & Coding', 'Art & Design', 'Food Friendship', 'Research & Data', 'Other Talents'];
+    const validCategories = ['Study Helper', 'Tech & Coding', 'Art & Design', 'Food Friendship', 'Photography', 'Other Talents'];
     if (!validCategories.includes(category)) {
       return res.status(400).json({ success: false, message: 'Invalid category' });
     }

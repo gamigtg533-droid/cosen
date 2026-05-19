@@ -350,4 +350,22 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 
 ---
 
-*Last updated: May 18, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
+### May 19, 2026 — Photography Category Integration & Rich Media Portfolios
+**Objective**: Retire the legacy *Research & Data* category and successfully deploy **Photography**, featuring interactive camera type cards, a custom Camera Model field with smart DB description packing/unpacking, and multi-file image/video past work uploads with looping micro-previews.
+
+**Features Implemented:**
+- **"Photography" Category Transition**: Replaced the "Research & Data" category system-wide (Navbar, Browse, Landing page featured portrait photography service, Interest wizard inside Signup, and backend whitelists).
+- **Guided Camera Type Selector**: Selecting *Photography* displays 5 camera type selector tiles:
+  - 📸 DSLR Cameras
+  - 📷 Mirrorless Cameras
+  - 🎦 Action Cameras
+  - 📸 Point & Shoot
+  - 🎞️ Instant Cameras
+- **Camera Model Custom Field**: Added a dedicated `Camera Model` input field for Photography. The model is saved by appending it to the `description` text payload using bold emoji markup, and dynamically parsed back on edit state load. This allows custom inputs without database schema column additions.
+- **Rich Past Work Gallery (Images & Videos)**: Re-engineered the design portfolio uploader into a generic past work gallery for both Art and Photography. Photography accepts videos as well as images up to **15MB** (`accept="image/*,video/*"`).
+- **Micro-preview Loop Player**: Configured both `PostService.jsx` previews and `ServiceDetail.jsx` past work gallery cards to automatically detect video extensions (`.mp4`, `.mov`, etc.) and render a premium, looping, muted `<video>` player element.
+- **Supabase Enum Migration**: Created [migrate_photography.sql](file:///c:/Users/HP/OneDrive/Desktop/copy_try/server/supabase/migrate_photography.sql) containing the DDL command to alter the `service_category` type with `'Photography'`.
+
+---
+
+*Last updated: May 19, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*

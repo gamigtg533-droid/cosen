@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import BrandLogo from '../components/BrandLogo';
-import { ChevronRight, ChevronLeft, Star, Shield, Zap, BookOpen, Code, Palette, UtensilsCrossed, Database, Music, Search, Loader, ShieldCheck, BadgeCheck, ShoppingBag } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Shield, Zap, BookOpen, Code, Palette, UtensilsCrossed, Camera, Music, Search, Loader, ShieldCheck, BadgeCheck, ShoppingBag } from 'lucide-react';
 import heroBgVideo from '../assets/landing_page_back_video.mp4';
 import person1 from '../assets/person1.jpg';
 import person2 from '../assets/person2.jpg';
@@ -16,13 +16,13 @@ const categories = [
   { name: 'Tech & Coding', icon: Code, color: '#4F3EFF', bg: '#EEEEFF', count: 85, desc: 'Websites, apps, scripts' },
   { name: 'Art & Design', icon: Palette, color: '#D63E82', bg: '#FFF0F6', count: 64, desc: 'Logos, UI & illustrations' },
   { name: 'Food Friendship', icon: UtensilsCrossed, color: '#FF6348', bg: '#FFF5F0', count: 56, desc: 'Home-cooked meals & snacks' },
-  { name: 'Research & Data', icon: Database, color: '#D4820A', bg: '#FFF8EC', count: 41, desc: 'Data analysis & Excel' },
+  { name: 'Photography', icon: Camera, color: '#00B2FF', bg: '#EAF8FF', count: 41, desc: 'Portraits, events & camera rental' },
   { name: 'Other Talents', icon: Music, color: '#8B3FC9', bg: '#F6EFFF', count: 112, desc: 'Music, fitness, languages' },
 ];
 
 const catColor = {
   'Tech & Coding': '#635BFF', 'Art & Design': '#FF6B9D', 'Study Helper': '#00D4AA',
-  'Food Friendship': '#FF6348', 'Research & Data': '#FF9F43', 'Other Talents': '#A855F7',
+  'Food Friendship': '#FF6348', 'Photography': '#00B2FF', 'Other Talents': '#A855F7',
 };
 
 const catBg = {
@@ -30,7 +30,7 @@ const catBg = {
   'Art & Design': 'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
   'Study Helper': 'linear-gradient(135deg,#E8FFF8,#C8FFF0)',
   'Food Friendship': 'linear-gradient(135deg,#FFF5F0,#FFE4D6)',
-  'Research & Data': 'linear-gradient(135deg,#FFF8EE,#FFE8CC)',
+  'Photography': 'linear-gradient(135deg,#EAF8FF,#CBEFFF)',
   'Other Talents': 'linear-gradient(135deg,#F8F0FF,#EEDDFF)',
 };
 
@@ -82,13 +82,13 @@ const MOCK_FEATURED = [
   },
   {
     _id: '5',
-    title: 'Data Analysis & Excel Dashboard',
-    description: 'I build clean Excel / Google Sheets dashboards, run statistical analyses, and create visualisations for your project or internship report. SPSS & R available.',
-    seller: { name: 'Divya Nair', department: "Statistics '26", avatar: person5 },
-    rating: 4.7, reviewCount: 22, price: 699,
-    category: 'Research & Data',
-    tags: ['Excel', 'Data Viz', 'Statistics'],
-    deliveryDays: 3,
+    title: 'Campus Portrait & Event Photography',
+    description: 'Professional event, portfolio and portrait photography around campus. Includes DSLR/Mirrorless high-res editing, raw files, and fast delivery.',
+    seller: { name: 'Divya Nair', department: "Fine Arts '26", avatar: person5 },
+    rating: 4.9, reviewCount: 22, price: 999,
+    category: 'Photography',
+    tags: ['Portrait', 'Event', 'DSLR'],
+    deliveryDays: 2,
     ordersCompleted: 35,
   },
   {
@@ -747,7 +747,7 @@ export default function Landing() {
                 { name: 'App Development', icon: Code },
                 { name: 'UI/UX Design', icon: Palette },
                 { name: 'Calculus Tutoring', icon: BookOpen },
-                { name: 'Data Analysis', icon: Database },
+                { name: 'Portrait Shoot', icon: Camera },
                 { name: 'Homemade Tiffin', icon: UtensilsCrossed },
                 { name: 'Video Editing', icon: Zap },
                 { name: 'Web Scraping', icon: Code },

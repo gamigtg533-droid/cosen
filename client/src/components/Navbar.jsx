@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronRight, Menu, X, BookOpen, Code, Palette, UtensilsCrossed,
-  Database, Music, LayoutDashboard, Search, LogIn, LogOut, User as UserIcon,
+  Camera, Music, LayoutDashboard, Search, LogIn, LogOut, User as UserIcon,
   MessageCircle, PlusSquare, Bell
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
@@ -19,7 +19,7 @@ const categories = [
   { name: 'Tech & Coding',   icon: Code,     color: '#635BFF', desc: 'Websites, apps, scripts' },
   { name: 'Art & Design',    icon: Palette,  color: '#FF6B9D', desc: 'Logos, UI & illustrations' },
   { name: 'Food Friendship',  icon: UtensilsCrossed, color: '#FF6348', desc: 'Home-cooked meals & snacks' },
-  { name: 'Research & Data', icon: Database, color: '#FF9F43', desc: 'Data analysis & Excel' },
+  { name: 'Photography',     icon: Camera,   color: '#00B2FF', desc: 'Portraits, events & camera rental' },
   { name: 'Other Talents',   icon: Music,    color: '#A855F7', desc: 'Music, fitness, languages' },
 ];
 

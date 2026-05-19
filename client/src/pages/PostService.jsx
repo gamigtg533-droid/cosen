@@ -13,7 +13,7 @@ const CATEGORIES = [
   { value: 'Tech & Coding', label: 'Tech & Coding', icon: Code, color: '#635BFF' },
   { value: 'Art & Design', label: 'Art & Design', icon: Palette, color: '#FF6B9D' },
   { value: 'Food Friendship', label: 'Food Friendship', icon: UtensilsCrossed, color: '#FF6348' },
-  { value: 'Research & Data', label: 'Research & Data', icon: Database, color: '#FF9F43' },
+  { value: 'Photography', label: 'Photography', icon: Camera, color: '#00B2FF' },
   { value: 'Other Talents', label: 'Other Talents', icon: Music, color: '#A855F7' },
 ];
 
@@ -46,6 +46,15 @@ const FOOD_SUBTYPES = [
   { value: 'Both', label: '🍱 Both (Veg + Non-Veg)', desc: 'Mixed menu with veg and non-veg options', emoji: '🍱' },
 ];
 
+// Photography subtypes / camera types
+const PHOTOGRAPHY_SUBTYPES = [
+  { value: 'DSLR Cameras', label: '📸 DSLR Cameras', desc: 'Professional DSLR photography & shoots' },
+  { value: 'Mirrorless Cameras', label: '📷 Mirrorless Cameras', desc: 'High-res mirrorless photography' },
+  { value: 'Action Cameras', label: '🎦 Action Cameras', desc: 'Sports, outdoor & action video' },
+  { value: 'Point & Shoot', label: '📸 Point & Shoot', desc: 'Compact digital cameras' },
+  { value: 'Instant Cameras', label: '🎞️ Instant Cameras', desc: 'Polaroid & instant physical prints' },
+];
+
 const DELIVERY_OPTIONS = [1, 2, 3, 5, 7, 10, 14, 21, 30];
 
 const catBg = {
@@ -53,7 +62,7 @@ const catBg = {
   'Tech & Coding': 'linear-gradient(135deg,#EEF0FF,#DDE0FF)',
   'Art & Design': 'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
   'Food Friendship': 'linear-gradient(135deg,#FFF5F0,#FFE4D6)',
-  'Research & Data': 'linear-gradient(135deg,#FFF8EE,#FFE8CC)',
+  'Photography': 'linear-gradient(135deg,#EAF8FF,#CBEFFF)',
   'Other Talents': 'linear-gradient(135deg,#F8F0FF,#EEDDFF)',
 };
 
@@ -74,6 +83,7 @@ export default function PostService() {
     tags: [],
     coverImageUrl: '',
     portfolioImages: [],
+    cameraModel: '',
   });
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState({});
@@ -92,9 +102,16 @@ export default function PostService() {
       try {
         const { data } = await api.get(`/services/${editId}`);
         const s = data.service;
+        let desc = s.description || '';
+        let camModel = '';
+        const match = desc.match(/\n\n📷 \*\*Camera Model:\*\* (.*)$/);
+        if (match) {
+          camModel = match[1];
+          desc = desc.replace(/\n\n📷 \*\*Camera Model:\*\* (.*)$/, '');
+        }
         setForm({
           title: s.title || '',
-          description: s.description || '',
+          description: desc,
           category: s.category || '',
           subCategory: s.subCategory || '',
           isNegotiable: !!s.isNegotiable,
@@ -103,6 +120,7 @@ export default function PostService() {
           tags: s.tags || [],
           coverImageUrl: s.images?.[0] || s.coverImageUrl || '',
           portfolioImages: s.portfolioImages || [],
+          cameraModel: camModel,
         });
       } catch (err) {
         setApiError('Could not load service. Please go back and try again.');
@@ -163,8 +181,10 @@ export default function PostService() {
       e.description = 'Description must be at least 30 characters.';
     if (!form.category)
       e.category = 'Please select a category.';
-    if ((form.category === 'Study Helper' || form.category === 'Art & Design' || form.category === 'Food Friendship') && !form.subCategory)
+    if ((form.category === 'Study Helper' || form.category === 'Art & Design' || form.category === 'Food Friendship' || form.category === 'Photography') && !form.subCategory)
       e.subCategory = 'Please select a service type.';
+    if (form.category === 'Photography' && (!form.cameraModel || !form.cameraModel.trim()))
+      e.cameraModel = 'Please write your camera model.';
     if (!form.price || isNaN(form.price) || Number(form.price) < (form.category === 'Food Friendship' ? 10 : 50))
       e.price = form.category === 'Food Friendship' ? 'Price must be at least ₹10.' : 'Price must be at least ₹50.';
     if (!form.deliveryDays)
@@ -207,7 +227,9 @@ export default function PostService() {
     try {
       const payload = {
         title: form.title.trim(),
-        description: form.description.trim(),
+        description: form.category === 'Photography' && form.cameraModel
+          ? `${form.description.trim()}\n\n📷 **Camera Model:** ${form.cameraModel.trim()}`
+          : form.description.trim(),
         category: form.category,
         subCategory: form.subCategory,
         isNegotiable: form.isNegotiable,
@@ -408,33 +430,110 @@ export default function PostService() {
             </div>
           )}
 
-          {/* ── Art & Design: Portfolio / Past Work Samples ── */}
-          {form.category === 'Art & Design' && (
+          {/* ── Photography: Camera Type Selector ── */}
+          {form.category === 'Photography' && (
+            <div className="stripe-card bg-white p-6">
+              <label className="form-label flex items-center gap-2 mb-1">
+                <Camera className="h-4 w-4 text-stripe-purple" />
+                <span>Camera Type <span className="text-red-500">*</span></span>
+              </label>
+              <p className="text-xs text-stripe-muted mb-4">Select the primary type of camera you use for this service</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {PHOTOGRAPHY_SUBTYPES.map(sub => {
+                  const isSelected = form.subCategory === sub.value;
+                  return (
+                    <button
+                      key={sub.value}
+                      type="button"
+                      onClick={() => {
+                        setForm(f => ({ ...f, subCategory: sub.value }));
+                        setErrors(er => ({ ...er, subCategory: undefined }));
+                      }}
+                      className="flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200"
+                      style={{
+                        borderColor: isSelected ? '#00B2FF' : '#E6EBF1',
+                        background: isSelected ? '#EAF8FF' : '#fff',
+                        boxShadow: isSelected ? '0 0 0 3px #00B2FF22' : 'none',
+                      }}
+                    >
+                      <span className="text-2xl leading-none mt-0.5">{sub.label.split(' ')[0]}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-stripe-slate">{sub.label.split(' ').slice(1).join(' ')}</div>
+                        <div className="text-xs text-stripe-muted mt-0.5">{sub.desc}</div>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle className="h-5 w-5 shrink-0 mt-0.5" style={{ color: '#00B2FF' }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {errors.subCategory && <p className="mt-3 text-xs text-red-500 font-medium">{errors.subCategory}</p>}
+            </div>
+          )}
+
+          {/* ── Photography: Camera Model Input ── */}
+          {form.category === 'Photography' && (
+            <div className="stripe-card bg-white p-6">
+              <label htmlFor="svc-camera-model" className="form-label flex items-center gap-2 mb-3">
+                <Camera className="h-4 w-4 text-stripe-purple" />
+                <span>Camera Model <span className="text-red-500">*</span></span>
+              </label>
+              <input
+                type="text"
+                id="svc-camera-model"
+                className="stripe-input"
+                placeholder="e.g. Sony Alpha 7 IV, Canon EOS R6, GoPro Hero 11..."
+                value={form.cameraModel || ''}
+                onChange={e => {
+                  setForm(f => ({ ...f, cameraModel: e.target.value }));
+                  setErrors(er => ({ ...er, cameraModel: undefined }));
+                }}
+              />
+              <div className="flex items-center justify-between mt-1.5">
+                {errors.cameraModel
+                  ? <p className="text-xs text-red-500 font-medium">{errors.cameraModel}</p>
+                  : <p className="text-xs text-stripe-muted">Which camera model will you be using for this shoot?</p>}
+              </div>
+            </div>
+          )}
+
+          {/* ── Portfolio / Past Work Samples ── */}
+          {(form.category === 'Art & Design' || form.category === 'Photography') && (
             <div className="stripe-card bg-white p-6">
               <label className="form-label flex items-center gap-2 mb-1">
                 <ImageIcon className="h-4 w-4 text-stripe-purple" />
                 <span>Past Work Samples <span className="text-stripe-muted font-normal">(optional, up to 5)</span></span>
               </label>
               <p className="text-xs text-stripe-muted mb-4">
-                Upload examples of your previous design work. This greatly increases buyer trust and conversions.
+                {form.category === 'Photography' 
+                  ? 'Upload high-quality images and video clips from your past photography shoots.'
+                  : 'Upload examples of your previous design work. This greatly increases buyer trust and conversions.'}
               </p>
 
-              {/* Portfolio image grid */}
+              {/* Portfolio media grid */}
               {form.portfolioImages.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                  {form.portfolioImages.map((url, idx) => (
-                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-stripe-border aspect-video">
-                      <img src={url} alt={`Work sample ${idx + 1}`} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, portfolioImages: f.portfolioImages.filter((_, i) => i !== idx) }))}
-                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                      <div className="absolute bottom-1 left-2 text-white text-xs font-bold opacity-70">#{idx + 1}</div>
-                    </div>
-                  ))}
+                  {form.portfolioImages.map((url, idx) => {
+                    const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || url.includes('/video/upload/');
+                    return (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-stripe-border aspect-video">
+                        {isVideo ? (
+                          <video src={url} className="w-full h-full object-cover" controls={false} muted loop playsInline autoPlay />
+                        ) : (
+                          <img src={url} alt={`Work sample ${idx + 1}`} className="w-full h-full object-cover" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, portfolioImages: f.portfolioImages.filter((_, i) => i !== idx) }))}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <div className="absolute bottom-1 left-2 text-white text-xs font-bold opacity-70">#{idx + 1}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -448,11 +547,15 @@ export default function PostService() {
                       <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center">
                         <Plus className="h-6 w-6 text-pink-500" />
                       </div>
-                      <span className="text-sm font-semibold text-stripe-muted">Add work sample image</span>
-                      <span className="text-xs text-stripe-muted">{5 - form.portfolioImages.length} remaining · JPG, PNG up to 5MB</span>
+                      <span className="text-sm font-semibold text-stripe-muted">
+                        {form.category === 'Photography' ? 'Add past work sample (image/video)' : 'Add work sample image'}
+                      </span>
+                      <span className="text-xs text-stripe-muted">
+                        {5 - form.portfolioImages.length} remaining · {form.category === 'Photography' ? 'JPG, PNG, MP4 up to 15MB' : 'JPG, PNG up to 5MB'}
+                      </span>
                     </>
                   )}
-                  <input type="file" accept="image/*" multiple className="hidden"
+                  <input type="file" accept={form.category === 'Photography' ? "image/*,video/*" : "image/*"} multiple className="hidden"
                     disabled={uploadingPortfolio}
                     onChange={async (e) => {
                       const files = Array.from(e.target.files);
@@ -464,7 +567,7 @@ export default function PostService() {
                         const urls = await Promise.all(toUpload.map(uploadPortfolioImage));
                         setForm(f => ({ ...f, portfolioImages: [...f.portfolioImages, ...urls] }));
                       } catch {
-                        setApiError('Failed to upload one or more images. Please try again.');
+                        setApiError('Failed to upload one or more files. Please try again.');
                       } finally {
                         setUploadingPortfolio(false);
                         e.target.value = '';
@@ -576,7 +679,7 @@ export default function PostService() {
                   : form.category === 'Art & Design' ? 'Design Service Title'
                     : form.category === 'Study Helper' ? 'Tutoring / Help Title'
                       : form.category === 'Tech & Coding' ? 'Tech Service Title'
-                        : form.category === 'Research & Data' ? 'Research Service Title'
+                        : form.category === 'Photography' ? 'Photography Service Title'
                           : 'Service Title'
               } <span className="text-red-500">*</span></span>
             </label>
@@ -587,9 +690,9 @@ export default function PostService() {
               placeholder={
                 form.category === 'Food Friendship' ? 'e.g. Homemade Biryani, Pasta, Momos, Tiffin Box…'
                   : form.category === 'Art & Design' ? 'e.g. Professional Logo Design & Brand Identity'
-                    : form.category === 'Study Helper' ? 'e.g. Calculus II Tutoring & assingment help'
+                    : form.category === 'Study Helper' ? 'e.g. Calculus II Tutoring & assignment help'
                       : form.category === 'Tech & Coding' ? 'e.g. Full-Stack Web App Development with React'
-                        : form.category === 'Research & Data' ? 'e.g. Data Analysis with Python, R & Excel'
+                        : form.category === 'Photography' ? 'e.g. Campus Portraits, Event Photography, Graduation Shoot…'
                           : 'e.g. Describe your service in a few words'
               }
               maxLength={120}
@@ -616,7 +719,7 @@ export default function PostService() {
                   : form.category === 'Art & Design' ? 'Design Description'
                     : form.category === 'Study Helper' ? 'Help Description'
                       : form.category === 'Tech & Coding' ? 'Technical Description'
-                        : form.category === 'Research & Data' ? 'Research Description'
+                        : form.category === 'Photography' ? 'Photography Description'
                           : 'Description'
               } <span className="text-red-500">*</span></span>
             </label>
@@ -629,7 +732,7 @@ export default function PostService() {
                   : form.category === 'Art & Design' ? `Describe your design service — tools you use (Canva, Figma, Photoshop), revisions included, file formats delivered…`
                     : form.category === 'Study Helper' ? `Describe what you teach — subjects, topics, your experience, teaching style, session format (online/offline)…`
                       : form.category === 'Tech & Coding' ? `Describe your tech service — languages/frameworks, what you'll build, your experience, delivery format…`
-                        : form.category === 'Research & Data' ? `Describe your research service — tools (Excel, SPSS, R, Python), types of analysis, deliverables…`
+                        : form.category === 'Photography' ? `Describe your photography service — camera gear/lenses, editing software, photo/video deliverables, style, and duration of the shoot…`
                           : `Describe your service in detail — what you'll deliver, your experience, tools/methods you use…`
               }
               maxLength={2000}

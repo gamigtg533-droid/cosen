@@ -259,15 +259,22 @@ export default function ServiceDetail() {
                 <h2 className="font-bold text-stripe-slate text-xl mb-1">Past Work Samples</h2>
                 <p className="text-sm text-stripe-muted mb-4">Examples of previous work by this seller</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {service.portfolioImages.map((url, idx) => (
-                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer"
-                      className="group relative block rounded-xl overflow-hidden border border-stripe-border aspect-video hover:shadow-lg transition-shadow">
-                      <img src={url} alt={`Work sample ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded-full">View full</span>
-                      </div>
-                    </a>
-                  ))}
+                  {service.portfolioImages.map((url, idx) => {
+                    const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || url.includes('/video/upload/');
+                    return (
+                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer"
+                        className="group relative block rounded-xl overflow-hidden border border-stripe-border aspect-video hover:shadow-lg transition-shadow">
+                        {isVideo ? (
+                          <video src={url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" controls={false} muted loop playsInline autoPlay />
+                        ) : (
+                          <img src={url} alt={`Work sample ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded-full">View full</span>
+                        </div>
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
