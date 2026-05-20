@@ -532,9 +532,9 @@ router.put('/:id/dispute', protect, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.put('/:id/vote-result', protect, async (req, res) => {
   try {
-    const { result } = req.body; // 'win' or 'lose'
-    if (result !== 'win' && result !== 'lose') {
-      return res.status(400).json({ success: false, message: 'Invalid result. Must be "win" or "lose"' });
+    const { choice } = req.body; // 'win' or 'lose'
+    if (choice !== 'win' && choice !== 'lose') {
+      return res.status(400).json({ success: false, message: 'Invalid choice. Must be "win" or "lose"' });
     }
 
     // 1. Fetch current order with service and users details
@@ -553,8 +553,9 @@ router.put('/:id/vote-result', protect, async (req, res) => {
     if (order.service?.category !== 'Playground') {
       return res.status(400).json({ success: false, message: 'This operation is only valid for Playground services.' });
     }
-    if (order.status !== 'inProgress') {
-      return res.status(400).json({ success: false, message: 'Match result can only be voted when the match is in progress.' });
+    // Only allow voting when BOTH entry fees are paid (status = inProgress)
+    if (order.status !== 'inProgress' || !order.buyer_paid || !order.seller_paid) {
+      return res.status(400).json({ success: false, message: 'Match result voting is only available after both players have paid their entry fees.' });
     }
 
     const isBuyer = order.buyer_id === req.user._id;
@@ -566,8 +567,8 @@ router.put('/:id/vote-result', protect, async (req, res) => {
 
     // 2. Set the vote for the respective party
     const updates = {};
-    if (isBuyer) updates.buyer_result = result;
-    if (isSeller) updates.seller_result = result;
+    if (isBuyer) updates.buyer_result = choice;
+    if (isSeller) updates.seller_result = choice;
 
     // Apply immediate update
     const { data: updatedOrder, error: updateErr } = await supabase
@@ -674,7 +675,17 @@ router.put('/:id/vote-result', protect, async (req, res) => {
       }
     }
 
-    // If only one voted, just return current state
+    // If only one voted, notify the other party to cast their vote
+    const waitingForId = isBuyer ? order.seller_id : order.buyer_id;
+    const voterName = isBuyer ? order.buyer?.name : order.seller?.name;
+    createNotification({
+      userId: waitingForId,
+      type: 'order_message',
+      title: '🎮 Your Opponent Voted!',
+      body: `${voterName || 'Your opponent'} declared their match result. Go cast your vote now to settle the match!`,
+      link: `/orders/${order.id}`,
+    });
+
     res.status(200).json({ success: true, conflict: false, order: mapOrder(updatedOrder) });
   } catch (error) {
     console.error('Vote match result error:', error);

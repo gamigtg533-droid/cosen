@@ -312,8 +312,8 @@ export default function OrderDetail() {
       const { data } = await api.put(`/orders/${id}/vote-result`, { choice });
       if (data.success) {
         setOrder(data.order);
-        if (data.message && data.message.includes('please select the right option')) {
-          setVoteConflictError('please select the right option, do not select the same option');
+        if (data.conflict) {
+          setVoteConflictError('⚠️ Please select the right option — do not select the same option as your opponent!');
         } else {
           setVoteConflictError('');
         }
@@ -622,7 +622,7 @@ export default function OrderDetail() {
                 )}
 
                 {/* ── Match Outcome Selection & Voting Dashboard ── */}
-                {isPlayground && order.status === 'inProgress' && (
+                {isPlayground && order.status === 'inProgress' && order.buyerPaid && order.sellerPaid && (
                   <div className="bg-stripe-purple/5 border border-stripe-purple/20 p-4 rounded-xl space-y-3">
                     <div className="flex items-center gap-1.5 border-b border-stripe-purple/10 pb-2">
                       <Trophy className="h-4 w-4 text-stripe-purple" />
@@ -630,12 +630,12 @@ export default function OrderDetail() {
                     </div>
 
                     <p className="text-[10px] text-stripe-muted leading-relaxed">
-                      Declare your result below. If your choices match (e.g. both claim they won), the votes will reset.
+                      Both entry fees confirmed ✅ — declare your match result below. If both select the same result, votes will reset.
                     </p>
 
                     {voteConflictError && (
                       <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-2.5 text-[10px] font-semibold leading-relaxed animate-pulse">
-                        ⚠️ {voteConflictError}
+                        {voteConflictError}
                       </div>
                     )}
 
@@ -645,7 +645,9 @@ export default function OrderDetail() {
                           You declared: <span className={myVote === 'win' ? 'text-emerald-600' : 'text-slate-600'}>{myVote === 'win' ? '🏆 You Win' : '💀 You Lose'}</span>
                         </div>
                         <p className="text-[10px] text-stripe-muted">
-                          {hasOtherVoted ? 'Resolving match results...' : "Waiting for opponent's vote..."}
+                          {hasOtherVoted
+                            ? 'Both voted — settling match result...'
+                            : "⏳ Waiting for opponent's vote..."}
                         </p>
                       </div>
                     ) : (
@@ -657,14 +659,14 @@ export default function OrderDetail() {
                             disabled={votingOutcome}
                             className="flex-1 py-2 px-3 rounded-lg border font-bold text-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 transition-all text-center flex items-center justify-center gap-1 shadow-sm"
                           >
-                            I Won
+                            🏆 I Won
                           </button>
                           <button
                             onClick={() => voteMatchResult('lose')}
                             disabled={votingOutcome}
                             className="flex-1 py-2 px-3 rounded-lg border font-bold text-xs bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition-all text-center flex items-center justify-center gap-1 shadow-sm"
                           >
-                            I Lost
+                            💀 I Lost
                           </button>
                         </div>
                       </div>
