@@ -36,6 +36,7 @@ export default function Browse() {
   const [services, setServices]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [total, setTotal]         = useState(0);
+  const [searchVal, setSearchVal] = useState(searchParams.get('search') || '');
   const [search, setSearch]       = useState(searchParams.get('search') || '');
   const [category, setCategory]   = useState(searchParams.get('category') || 'All');
   const [sort, setSort]           = useState('rating');
@@ -78,31 +79,46 @@ export default function Browse() {
     }
   }, []);
 
-  // ─── Initial load & param changes ────────────────────────────
-  useEffect(() => {
-    const urlSearch = searchParams.get('search') || '';
-    const urlCategory = searchParams.get('category') || 'All';
-    setSearch(urlSearch);
-    setCategory(urlCategory);
-    fetchServices(urlSearch, urlCategory, sort);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount
-
-  // ─── Debounced live search ────────────────────────────────────
+  // ─── Debounce searchVal -> search ─────────────────────────────
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
-      // Sync URL params
-      const newParams = {};
-      if (search.trim()) newParams.search = search.trim();
-      if (category !== 'All') newParams.category = category;
-      setSearchParams(newParams, { replace: true });
-      // Fetch from DB
-      fetchServices(search, category, sort);
+      if (searchVal.trim() !== search) {
+        setSearch(searchVal.trim());
+      }
     }, 420);
     return () => clearTimeout(debounceTimer.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, category, sort]);
+  }, [searchVal, search]);
+
+  // ─── Sync URL params back to state ───────────────────────────
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    const urlCategory = searchParams.get('category') || 'All';
+
+    if (urlSearch !== search) {
+      setSearch(urlSearch);
+      setSearchVal(urlSearch);
+    }
+    if (urlCategory !== category) {
+      setCategory(urlCategory);
+    }
+  }, [searchParams]);
+
+  // ─── Fetch services on query param / state changes ───────────
+  useEffect(() => {
+    // Sync state to URL params (immediately!)
+    const newParams = {};
+    if (search.trim()) newParams.search = search.trim();
+    if (category !== 'All') newParams.category = category;
+
+    const urlSearch = searchParams.get('search') || '';
+    const urlCategory = searchParams.get('category') || 'All';
+    if (urlSearch !== search || urlCategory !== category) {
+      setSearchParams(newParams, { replace: true });
+    }
+
+    fetchServices(search, category, sort);
+  }, [search, category, sort, fetchServices]);
 
   // ─── Category change ─────────────────────────────────────────
   const handleCategoryChange = (cat) => {
@@ -110,7 +126,10 @@ export default function Browse() {
   };
 
   // ─── Clear search ─────────────────────────────────────────────
-  const clearSearch = () => setSearch('');
+  const clearSearch = () => {
+    setSearchVal('');
+    setSearch('');
+  };
 
   // ─── Helpers ─────────────────────────────────────────────────
   const getInitials = (s) => {
@@ -140,10 +159,10 @@ export default function Browse() {
                 type="text"
                 className="stripe-input pl-10 pr-10"
                 placeholder="Search for a service…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={searchVal}
+                onChange={e => setSearchVal(e.target.value)}
               />
-              {search && (
+              {searchVal && (
                 <button
                   onClick={clearSearch}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-stripe-muted hover:text-stripe-slate transition-colors"
