@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword';
 import Messages from './pages/Messages';
 import SellerProfile from './pages/SellerProfile';
 import ProtectedRoute from './components/ProtectedRoute';
+import GenderModal from './components/GenderModal';
 
 function TitleUpdater() {
   const location = useLocation();
@@ -51,6 +52,7 @@ function App() {
   return (
     <Router>
       <TitleUpdater />
+      <GenderModal />
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow pb-16 md:pb-0">

@@ -118,9 +118,115 @@ const sendOrderEmail = (type, ctx) => {
 
 // ── Helpers ──────────────────────────────────────────────────
 
-const mapOrder = (row) => {
+const mapOrder = (row, currentUserId = null) => {
   if (!row) return null;
   const { service, buyer, seller, review, ...order } = row;
+
+  const isSendiYou = service?.category === 'SendiYou';
+  const isMutualReveal = !!order.buyer_revealed && !!order.seller_revealed;
+
+  let mappedBuyer = buyer ? {
+    _id: buyer.id,
+    name: buyer.name,
+    email: buyer.email,
+    avatar: { public_id: buyer.avatar_public_id || '', url: buyer.avatar_url || '' },
+    phone: buyer.phone,
+    isPhoneVerified: buyer.is_phone_verified,
+  } : undefined;
+
+  let mappedSeller = seller ? {
+    _id: seller.id,
+    name: seller.name,
+    email: seller.email,
+    avatar: { public_id: seller.avatar_public_id || '', url: seller.avatar_url || '' },
+    department: seller.department,
+    phone: seller.phone,
+    isPhoneVerified: seller.is_phone_verified,
+  } : undefined;
+
+  // Masking for SendiYou if NOT mutually revealed
+  if (isSendiYou && !isMutualReveal) {
+    if (currentUserId) {
+      if (order.buyer_id === currentUserId) {
+        // Viewing as buyer -> mask the seller
+        if (mappedSeller) {
+          mappedSeller = {
+            _id: seller.id,
+            name: service.display_name || 'Anonymous Poster',
+            avatar: { public_id: '', url: '' },
+            department: 'Secret',
+            phone: '',
+            isPhoneVerified: false,
+            email: '',
+          };
+        }
+      } else if (order.seller_id === currentUserId) {
+        // Viewing as seller -> mask the buyer
+        if (mappedBuyer) {
+          mappedBuyer = {
+            _id: buyer.id,
+            name: 'SendiYou Match',
+            avatar: { public_id: '', url: '' },
+            phone: '',
+            isPhoneVerified: false,
+            email: '',
+          };
+        }
+      } else {
+        // Third-party/admin -> mask both
+        if (mappedSeller) {
+          mappedSeller = {
+            _id: seller.id,
+            name: service.display_name || 'Anonymous Poster',
+            avatar: { public_id: '', url: '' },
+            department: 'Secret',
+            phone: '',
+            isPhoneVerified: false,
+            email: '',
+          };
+        }
+        if (mappedBuyer) {
+          mappedBuyer = {
+            _id: buyer.id,
+            name: 'SendiYou Match',
+            avatar: { public_id: '', url: '' },
+            phone: '',
+            isPhoneVerified: false,
+            email: '',
+          };
+        }
+      }
+    } else {
+      // No currentUserId -> mask both
+      if (mappedSeller) {
+        mappedSeller = {
+          _id: seller.id,
+          name: service.display_name || 'Anonymous Poster',
+          avatar: { public_id: '', url: '' },
+          department: 'Secret',
+          phone: '',
+          isPhoneVerified: false,
+          email: '',
+        };
+      }
+      if (mappedBuyer) {
+        mappedBuyer = {
+          _id: buyer.id,
+          name: 'SendiYou Match',
+          avatar: { public_id: '', url: '' },
+          phone: '',
+          isPhoneVerified: false,
+          email: '',
+        };
+      }
+    }
+  }
+
+  // Also mask phone numbers from top-level fields for SendiYou pre-mutual reveal
+  const showPhone = !isSendiYou || isMutualReveal;
+  const buyerPhoneVal = showPhone ? (buyer?.phone || null) : null;
+  const buyerPhoneVerifiedVal = showPhone ? (buyer?.is_phone_verified || false) : false;
+
   return {
     ...order,
     _id: order.id,
@@ -148,6 +254,8 @@ const mapOrder = (row) => {
     completedAt: order.completed_at,
     createdAt: order.created_at,
     updatedAt: order.updated_at,
+    buyerRevealed: !!order.buyer_revealed,
+    sellerRevealed: !!order.seller_revealed,
     review: (review && review.length > 0) ? {
       rating: review[0].rating,
       comment: review[0].comment,
@@ -160,24 +268,16 @@ const mapOrder = (row) => {
       deliveryDays: service.delivery_days,
       images: service.images,
       category: service.category,
+      expiresAt: service.expires_at,
+      preferredGender: service.preferred_gender,
+      identityHidden: service.identity_hidden,
+      displayName: service.display_name,
+      acceptedById: service.accepted_by_id
     } : undefined,
-    buyer: buyer ? {
-      _id: buyer.id,
-      name: buyer.name,
-      email: buyer.email,
-      avatar: { public_id: buyer.avatar_public_id || '', url: buyer.avatar_url || '' },
-    } : undefined,
-    seller: seller ? {
-      _id: seller.id,
-      name: seller.name,
-      email: seller.email,
-      avatar: { public_id: seller.avatar_public_id || '', url: seller.avatar_url || '' },
-      department: seller.department,
-      phone: seller.phone,
-      isPhoneVerified: seller.is_phone_verified,
-    } : undefined,
-    buyerPhone: buyer?.phone || null,
-    buyerPhoneVerified: buyer?.is_phone_verified || false,
+    buyer: mappedBuyer,
+    seller: mappedSeller,
+    buyerPhone: buyerPhoneVal,
+    buyerPhoneVerified: buyerPhoneVerifiedVal,
   };
 };
 
@@ -219,14 +319,14 @@ router.post('/', protect, async (req, res) => {
       })
       .select(`
         *,
-        service:services!service_id(id, title, price, delivery_days),
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id),
         buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
         seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified)
       `)
       .single();
 
     if (error) throw error;
-    const mapped = mapOrder(order);
+    const mapped = mapOrder(order, req.user._id);
     // Notify seller about new order (non-blocking)
     if (mapped.seller?.email && mapped.buyer?.name) {
       sendOrderEmail('placed', {
@@ -287,14 +387,14 @@ router.put('/:id/set-price', protect, async (req, res) => {
       .eq('id', req.params.id)
       .select(`
         *,
-        service:services!service_id(id, title, price, delivery_days),
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id),
         buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
         seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified)
       `)
       .single();
 
     if (error) throw error;
-    res.status(200).json({ success: true, order: mapOrder(updated) });
+    res.status(200).json({ success: true, order: mapOrder(updated, req.user._id) });
   } catch (error) {
     console.error('Set price error:', error);
     res.status(500).json({ success: false, message: 'Server error setting price' });
@@ -310,7 +410,7 @@ router.get('/', protect, async (req, res) => {
       .from('orders')
       .select(`
         *,
-        service:services!service_id(id, title, price, images, category),
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id),
         buyer:users!buyer_id(id, name, avatar_url, avatar_public_id),
         seller:users!seller_id(id, name, avatar_url, avatar_public_id)
       `)
@@ -318,7 +418,7 @@ router.get('/', protect, async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    res.status(200).json({ success: true, orders: orders.map(mapOrder) });
+    res.status(200).json({ success: true, orders: orders.map(o => mapOrder(o, req.user._id)) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -333,7 +433,7 @@ router.get('/:id', protect, async (req, res) => {
       .from('orders')
       .select(`
         *,
-        service:services!service_id(id, title, price, delivery_days, images, category),
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id),
         buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
         seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, department, phone, is_phone_verified),
         review:reviews(rating, comment, created_at)
@@ -349,7 +449,7 @@ router.get('/:id', protect, async (req, res) => {
     if (!isParty && req.user.role !== 'admin')
       return res.status(403).json({ success: false, message: 'Access denied' });
 
-    res.status(200).json({ success: true, order: mapOrder(order) });
+    res.status(200).json({ success: true, order: mapOrder(order, req.user._id) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -404,7 +504,7 @@ router.put('/:id/deliver', protect, async (req, res) => {
         link: `/orders/${req.params.id}`,
       });
     }
-    res.status(200).json({ success: true, order: mapOrder(updated) });
+    res.status(200).json({ success: true, order: mapOrder(updated, req.user._id) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -459,7 +559,7 @@ router.put('/:id/complete', protect, async (req, res) => {
         link: `/orders/${req.params.id}`,
       });
     }
-    res.status(200).json({ success: true, order: mapOrder(updated) });
+    res.status(200).json({ success: true, order: mapOrder(updated, req.user._id) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -521,7 +621,7 @@ router.put('/:id/dispute', protect, async (req, res) => {
         link: `/orders/${req.params.id}`,
       });
     }
-    res.status(200).json({ success: true, order: mapOrder(updated) });
+    res.status(200).json({ success: true, order: mapOrder(updated, req.user._id) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -626,7 +726,7 @@ router.put('/:id/vote-result', protect, async (req, res) => {
           success: true,
           conflict: true,
           message: 'please select the right option, do not select the same option',
-          order: mapOrder(resetOrder)
+          order: mapOrder(resetOrder, req.user._id)
         });
       } else {
         // Agreement! One is 'win', one is 'lose'
@@ -670,7 +770,7 @@ router.put('/:id/vote-result', protect, async (req, res) => {
         return res.status(200).json({
           success: true,
           conflict: false,
-          order: mapOrder(finalOrder)
+          order: mapOrder(finalOrder, req.user._id)
         });
       }
     }
@@ -686,11 +786,12 @@ router.put('/:id/vote-result', protect, async (req, res) => {
       link: `/orders/${order.id}`,
     });
 
-    res.status(200).json({ success: true, conflict: false, order: mapOrder(updatedOrder) });
+    res.status(200).json({ success: true, conflict: false, order: mapOrder(updatedOrder, req.user._id) });
   } catch (error) {
     console.error('Vote match result error:', error);
     res.status(500).json({ success: false, message: 'Server error voting result' });
   }
 });
 
+router.mapOrder = mapOrder;
 module.exports = router;

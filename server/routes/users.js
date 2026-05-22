@@ -15,6 +15,7 @@ const mapUser = (u) => u ? {
   bio: u.bio,
   skills: u.skills,
   role: u.role,
+  gender: u.gender || null,
   rating: u.rating,
   reviewCount: u.review_count,
   isEmailVerified: u.is_email_verified,
@@ -36,7 +37,7 @@ router.get('/me', protect, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, rating, review_count, is_email_verified, phone, is_phone_verified, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
+      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, gender, rating, review_count, is_email_verified, phone, is_phone_verified, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
       .eq('id', req.user._id)
       .single();
 
@@ -58,6 +59,7 @@ router.put('/me', protect, async (req, res) => {
       bio: 'bio',
       skills: 'skills',
       phone: 'phone',
+      gender: 'gender',
       bannerUrl: 'banner_url',
       avatarUrl: 'avatar_url',
       instagramUrl: 'instagram_url',
@@ -79,7 +81,7 @@ router.put('/me', protect, async (req, res) => {
       .from('users')
       .update(updates)
       .eq('id', req.user._id)
-      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, rating, review_count, is_email_verified, phone, is_phone_verified, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
+      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, gender, rating, review_count, is_email_verified, phone, is_phone_verified, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
       .single();
 
     if (error) throw error;

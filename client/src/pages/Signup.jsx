@@ -63,7 +63,7 @@ export default function Signup() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
 
   /* ── Step 2 ── */
-  const [profile, setProfile] = useState({ department: '', yearOfStudy: '', bio: '' });
+  const [profile, setProfile] = useState({ department: '', yearOfStudy: '', bio: '', gender: '' });
 
   /* ── Step 3 ── */
   const [role, setRole]     = useState('');
@@ -123,6 +123,20 @@ export default function Signup() {
 
   const nextStep = () => {
     if (step === 1 && validateStep1()) return;
+    if (step === 2) {
+      if (!profile.department) {
+        setLocalError('Please select your department.');
+        return;
+      }
+      if (!profile.yearOfStudy) {
+        setLocalError('Please select your year of study.');
+        return;
+      }
+      if (!profile.gender) {
+        setLocalError('Please select your gender.');
+        return;
+      }
+    }
     setLocalError('');
     setStep(s => s + 1);
   };
@@ -139,6 +153,7 @@ export default function Signup() {
       department:  profile.department,
       yearOfStudy: profile.yearOfStudy,
       bio:         profile.bio,
+      gender:      profile.gender || 'Prefer not to say',
       role:        role || 'both',
       interests:   skills,
     };
@@ -410,9 +425,36 @@ export default function Signup() {
             </div>
 
             <div>
+              <label className="block text-sm font-semibold mb-1.5">Gender</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'Male', emoji: '👨', label: 'Male' },
+                  { value: 'Female', emoji: '👩', label: 'Female' },
+                  { value: 'Other', emoji: '🌈', label: 'Other' },
+                  { value: 'Prefer not to say', emoji: '🔒', label: 'Prefer not to say' },
+                ].map(({ value, emoji, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => { setProfile(p => ({ ...p, gender: value })); setLocalError(''); }}
+                    className="p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                    style={{
+                      borderColor: profile.gender === value ? '#635BFF' : 'rgba(255,255,255,0.15)',
+                      background:  profile.gender === value ? 'rgba(99,91,255,0.18)' : 'rgba(255,255,255,0.04)',
+                      color:       profile.gender === value ? '#A5A1FF' : 'rgba(255,255,255,0.6)',
+                    }}
+                  >
+                    <span className="text-base">{emoji}</span>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-sm font-semibold mb-1.5">Short Bio <span style={{ color: 'rgba(255,255,255,0.35)' }}>(optional)</span></label>
               <textarea
-                rows={3}
+                rows={2}
                 className="stripe-input resize-none"
                 placeholder="e.g. CSE 3rd year, love solving DSA problems and building projects…"
                 value={profile.bio}

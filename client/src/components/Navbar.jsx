@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronRight, Menu, X, BookOpen, Code, Palette, UtensilsCrossed,
   Camera, Music, LayoutDashboard, Search, LogIn, LogOut, User as UserIcon,
-  MessageCircle, PlusSquare, Bell, Trophy
+  MessageCircle, PlusSquare, Bell, Trophy, Heart
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import BrandLogo from './BrandLogo';
@@ -21,6 +21,7 @@ const categories = [
   { name: 'Food Friendship',  icon: UtensilsCrossed, color: '#FF6348', desc: 'Home-cooked meals & snacks' },
   { name: 'Photography',     icon: Camera,   color: '#00B2FF', desc: 'Portraits, events & camera rental' },
   { name: 'Playground',      icon: Trophy,   color: '#F59E0B', desc: 'Team matches & esports pool' },
+  { name: 'SendiYou',        icon: Heart,    color: '#EC4899', desc: 'Anonymous campus connections' },
   { name: 'Other Talents',   icon: Music,    color: '#A855F7', desc: 'Music, fitness, languages' },
 ];
 

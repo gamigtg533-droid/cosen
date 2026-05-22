@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Star, Clock, RefreshCw, Shield, ChevronRight, MessageCircle, Loader, AlertCircle, Trophy } from 'lucide-react';
+import { Star, Clock, RefreshCw, Shield, ChevronRight, MessageCircle, Loader, AlertCircle, Trophy, Heart, Eye, EyeOff } from 'lucide-react';
 import useRazorpay from '../hooks/useRazorpay';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
@@ -19,6 +19,7 @@ export default function ServiceDetail() {
   const [payError, setPayError]     = useState('');
   const [requirements, setRequirements] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [acceptLoading, setAcceptLoading] = useState(false);
 
   // ── Fetch service from API ──────────────────────────────
   useEffect(() => {
@@ -178,6 +179,38 @@ export default function ServiceDetail() {
     ?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
 
   const isPlayground = service?.category === 'Playground';
+  const isSendiYou   = service?.category === 'SendiYou';
+
+  // Gender gating: check if the current user can accept this SendiYou post
+  const canAcceptSendiYou = () => {
+    if (!isSendiYou) return true;
+    const preferred = service.preferredGender;
+    if (!preferred || preferred === 'Any') return true;
+    return user?.gender === preferred;
+  };
+
+  const handleAcceptSendiYou = async () => {
+    if (!user?.gender) {
+      setPayError('Please set your gender in your profile before accepting a SendiYou connection.');
+      return;
+    }
+    if (!canAcceptSendiYou()) {
+      setPayError(`This connection is looking for a ${service.preferredGender} match. Your gender doesn't match.`);
+      return;
+    }
+    setAcceptLoading(true);
+    setPayError('');
+    try {
+      const { data } = await api.post(`/sendiyou/${service._id || service.id}/accept`);
+      if (data.success) {
+        navigate(`/orders/${data.orderId}`);
+      }
+    } catch (err) {
+      setPayError(err.response?.data?.message || 'Failed to accept connection.');
+    } finally {
+      setAcceptLoading(false);
+    }
+  };
   let gameName = '';
   let bookedCampus = 'No';
   let locationVal = '';
@@ -248,31 +281,46 @@ export default function ServiceDetail() {
 
             {/* Image / Banner — click avatar or name to go to profile */}
             <div className="w-full h-72 rounded-2xl flex items-center justify-center mb-8 overflow-hidden relative"
-              style={{ background: 'linear-gradient(135deg, #635BFF20, #635BFF60)' }}>
+              style={{ background: isSendiYou ? 'linear-gradient(135deg, #EC489920, #F43F5E40)' : 'linear-gradient(135deg, #635BFF20, #635BFF60)' }}>
 
-              {/* Seller avatar (clickable) */}
-              <Link to={`/profile/${sellerId}`} className="group" title={`View ${service.seller?.name}'s profile`}>
-                {sellerAvatar ? (
-                  <img
-                    src={sellerAvatar}
-                    alt={service.seller?.name}
-                    className="w-24 h-24 rounded-3xl object-cover shadow-stripe-card ring-4 ring-white/60 group-hover:ring-stripe-purple/60 transition-all"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-3xl bg-stripe-purple flex items-center justify-center text-white text-4xl font-bold shadow-stripe-card ring-4 ring-white/60 group-hover:ring-stripe-purple/60 transition-all">
-                    {sellerInitials}
-                  </div>
-                )}
-              </Link>
+              {/* Seller avatar (clickable unless identity hidden) */}
+              {isSendiYou && service.identityHidden ? (
+                <div className="w-24 h-24 rounded-3xl bg-pink-100 border border-pink-200 flex items-center justify-center text-pink-500 shadow-stripe-card ring-4 ring-white/60">
+                  <EyeOff className="h-10 w-10" />
+                </div>
+              ) : (
+                <Link to={`/profile/${sellerId}`} className="group" title={`View ${service.seller?.name}'s profile`}>
+                  {sellerAvatar ? (
+                    <img
+                      src={sellerAvatar}
+                      alt={service.seller?.name}
+                      className="w-24 h-24 rounded-3xl object-cover shadow-stripe-card ring-4 ring-white/60 group-hover:ring-stripe-purple/60 transition-all"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-3xl bg-stripe-purple flex items-center justify-center text-white text-4xl font-bold shadow-stripe-card ring-4 ring-white/60 group-hover:ring-stripe-purple/60 transition-all">
+                      {sellerInitials}
+                    </div>
+                  )}
+                </Link>
+              )}
 
-              {/* Seller name chip (clickable) */}
-              <Link
-                to={`/profile/${sellerId}`}
-                className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-stripe-card-sm hover:bg-white transition-colors"
-              >
-                <p className="text-xs text-stripe-muted">{service.category}</p>
-                <p className="text-sm font-semibold text-stripe-purple">{service.seller?.name || 'Campus Expert'}</p>
-              </Link>
+              {/* Seller name chip (clickable unless identity hidden) */}
+              {isSendiYou && service.identityHidden ? (
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-stripe-card-sm">
+                  <p className="text-xs text-stripe-muted">{service.category}</p>
+                  <p className="text-sm font-semibold text-pink-600 flex items-center gap-1">
+                    <EyeOff className="h-3.5 w-3.5" /> {service.displayName || 'Anonymous'}
+                  </p>
+                </div>
+              ) : (
+                <Link
+                  to={`/profile/${sellerId}`}
+                  className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-stripe-card-sm hover:bg-white transition-colors"
+                >
+                  <p className="text-xs text-stripe-muted">{service.category}</p>
+                  <p className="text-sm font-semibold text-stripe-purple">{service.seller?.name || 'Campus Expert'}</p>
+                </Link>
+              )}
             </div>
 
             {/* Playground Match Info Card */}
@@ -389,165 +437,254 @@ export default function ServiceDetail() {
           <div className="w-full lg:w-80 shrink-0">
             <div className="stripe-card p-6 sticky top-24">
               {/* Price */}
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl font-bold text-stripe-slate">
-                  ₹{Number(service.price).toLocaleString('en-IN')}
-                </span>
-                <span className="text-stripe-muted">/ session</span>
-              </div>
-              <div className="flex items-center justify-between mb-5">
-                <p className="text-stripe-muted text-sm">
-                  {service.deliveryDays}-day delivery{service.category === 'Study Helper' && ' · 3 revisions included'}
-                </p>
-                {service.isNegotiable && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
-                    Negotiable
-                  </span>
-                )}
-              </div>
+              {isSendiYou ? (
+                <div className="mb-5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl p-4.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] text-pink-100 font-bold uppercase tracking-wider">Category</p>
+                      <p className="text-base font-bold flex items-center gap-1">
+                        <Heart className="h-4 w-4 fill-white" /> SendiYou Match
+                      </p>
+                    </div>
+                    <div className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-white/20">
+                      Free Post
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-3xl font-bold text-stripe-slate">
+                      ₹{Number(service.price).toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-stripe-muted">/ session</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-5">
+                    <p className="text-stripe-muted text-sm">
+                      {service.deliveryDays}-day delivery{service.category === 'Study Helper' && ' · 3 revisions included'}
+                    </p>
+                    {service.isNegotiable && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
+                        Negotiable
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* Own service warning */}
               {user && (user._id === service.sellerId || user.id === service.sellerId) && (
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2.5 mb-4 text-xs">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  This is your own service — you cannot order it.
+                  This is your own service — you cannot order or accept it.
+                </div>
+              )}
+
+              {/* SendiYou Preferred Gender Info Panel */}
+              {isSendiYou && (
+                <div className="bg-pink-50/40 border border-pink-100 rounded-xl p-4 mb-4 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs border-b border-pink-100/60 pb-2">
+                    <span className="text-stripe-muted font-medium">Looking for</span>
+                    <span className="font-bold px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700">
+                      {service.preferredGender === 'Any' ? 'Any Gender ⚧' : `${service.preferredGender} Only 👤`}
+                    </span>
+                  </div>
+                  {service.identityHidden ? (
+                    <div className="flex items-center gap-2 text-[11px] text-rose-600 font-semibold">
+                      <EyeOff className="h-3.5 w-3.5" />
+                      <span>Poster's profile is hidden 🔒</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-[11px] text-emerald-600 font-semibold">
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Poster's profile is public 🔓</span>
+                    </div>
+                  )}
+                  <div className="text-[11px] text-stripe-muted italic pt-1 leading-normal">
+                    Matches expire after 7 days once accepted. Profile reveal is mutual.
+                  </div>
                 </div>
               )}
 
               {/* Requirements input */}
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-stripe-slate mb-1.5">
-                  Your requirements <span className="text-stripe-muted font-normal">(optional)</span>
-                </label>
-                <textarea
-                  id="service-requirements"
-                  rows={3}
-                  className="stripe-input resize-none"
-                  placeholder="Describe what you need help with..."
-                  value={requirements}
-                  onChange={e => setRequirements(e.target.value)}
-                />
-              </div>
+              {!isSendiYou && (
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-stripe-slate mb-1.5">
+                    Your requirements <span className="text-stripe-muted font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    id="service-requirements"
+                    rows={3}
+                    className="stripe-input resize-none"
+                    placeholder="Describe what you need help with..."
+                    value={requirements}
+                    onChange={e => setRequirements(e.target.value)}
+                  />
+                </div>
+              )}
 
               {/* Error */}
               {payError && (
-                <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2.5 mb-4 text-xs">
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2.5 mb-4 text-xs font-semibold">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                   {payError}
                 </div>
               )}
 
               {/* CTA Button */}
-              {service.isNegotiable ? (
+              {isSendiYou ? (
                 <button
-                  id="service-negotiate"
-                  onClick={handleRequestNegotiation}
-                  disabled={payLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
-                  className="btn-primary w-full justify-center py-3.5 mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                  id="service-accept-connection"
+                  onClick={handleAcceptSendiYou}
+                  disabled={acceptLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
+                  className="btn-primary w-full justify-center py-3.5 mb-3 text-white transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+                  style={{ background: 'linear-gradient(135deg, #EC4899, #F43F5E)' }}
                 >
-                  {payLoading ? <><Loader className="h-4 w-4 animate-spin" /> Processing...</> : 'Request Service & Negotiate'}
+                  {acceptLoading ? (
+                    <><Loader className="h-4 w-4 animate-spin" /> Accepting...</>
+                  ) : (
+                    <><Heart className="h-4 w-4 fill-white shrink-0 mr-1.5 animate-pulse" /> Accept Connection</>
+                  )}
                 </button>
               ) : (
-                <button
-                  id="service-order-now"
-                  onClick={handleOrderNow}
-                  disabled={payLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
-                  className="btn-primary w-full justify-center py-3.5 mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {payLoading
-                    ? <><Loader className="h-4 w-4 animate-spin" /> Processing...</>
-                    : <>Pay ₹{Number(service.price).toLocaleString('en-IN')} with Razorpay <ChevronRight className="h-4 w-4" /></>
-                  }
-                </button>
+                <>
+                  {service.isNegotiable ? (
+                    <button
+                      id="service-negotiate"
+                      onClick={handleRequestNegotiation}
+                      disabled={payLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
+                      className="btn-primary w-full justify-center py-3.5 mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {payLoading ? <><Loader className="h-4 w-4 animate-spin" /> Processing...</> : 'Request Service & Negotiate'}
+                    </button>
+                  ) : (
+                    <button
+                      id="service-order-now"
+                      onClick={handleOrderNow}
+                      disabled={payLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
+                      className="btn-primary w-full justify-center py-3.5 mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {payLoading
+                        ? <><Loader className="h-4 w-4 animate-spin" /> Processing...</>
+                        : <>Pay ₹{Number(service.price).toLocaleString('en-IN')} with Razorpay <ChevronRight className="h-4 w-4" /></>
+                      }
+                    </button>
+                  )}
+
+                  <button
+                    id="service-contact"
+                    className="btn-outline w-full justify-center py-3 gap-2"
+                    disabled={chatLoading}
+                    onClick={async () => {
+                      if (!user) { navigate('/login'); return; }
+                      setChatLoading(true);
+                      try {
+                        const sellerId = service.seller?._id || service.sellerId;
+                        const { data } = await api.post('/conversations/start', { recipientId: sellerId });
+                        navigate('/messages', { state: { conversationId: data.conversation.id } });
+                      } catch {
+                        navigate('/messages');
+                      } finally {
+                        setChatLoading(false);
+                      }
+                    }}
+                  >
+                    {chatLoading
+                      ? <><Loader className="h-4 w-4 animate-spin" /> Opening chat…</>
+                      : <><MessageCircle className="h-4 w-4" /> Contact Seller</>}
+                  </button>
+                </>
               )}
 
-              <button
-                id="service-contact"
-                className="btn-outline w-full justify-center py-3 gap-2"
-                disabled={chatLoading}
-                onClick={async () => {
-                  if (!user) { navigate('/login'); return; }
-                  setChatLoading(true);
-                  try {
-                    const sellerId = service.seller?._id || service.sellerId;
-                    const { data } = await api.post('/conversations/start', { recipientId: sellerId });
-                    navigate('/messages', { state: { conversationId: data.conversation.id } });
-                  } catch {
-                    navigate('/messages');
-                  } finally {
-                    setChatLoading(false);
-                  }
-                }}
-              >
-                {chatLoading
-                  ? <><Loader className="h-4 w-4 animate-spin" /> Opening chat…</>
-                  : <><MessageCircle className="h-4 w-4" /> Contact Seller</>}
-              </button>
+              {/* Escrow note & Razorpay badge */}
+              {!isSendiYou && (
+                <>
+                  <div className="flex items-center gap-2 justify-center mt-4 text-xs text-stripe-muted">
+                    <Shield className="h-3.5 w-3.5 text-stripe-purple" />
+                    Funds held securely until you confirm delivery
+                  </div>
 
-              {/* Escrow note */}
-              <div className="flex items-center gap-2 justify-center mt-4 text-xs text-stripe-muted">
-                <Shield className="h-3.5 w-3.5 text-stripe-purple" />
-                Funds held securely until you confirm delivery
-              </div>
-
-              {/* Razorpay badge */}
-              <div className="flex items-center justify-center gap-1.5 mt-3">
-                <span className="text-xs text-stripe-muted">Secured by</span>
-                <span className="text-xs font-bold" style={{ color: '#072654' }}>Razorpay</span>
-              </div>
+                  <div className="flex items-center justify-center gap-1.5 mt-3">
+                    <span className="text-xs text-stripe-muted">Secured by</span>
+                    <span className="text-xs font-bold" style={{ color: '#072654' }}>Razorpay</span>
+                  </div>
+                </>
+              )}
 
               <hr className="border-stripe-border my-6" />
 
               {/* Seller info */}
               {service.seller && (
-                <>
-                  <h4 className="font-semibold text-stripe-slate mb-3 text-sm">About the Seller</h4>
-                  <div className="flex items-center gap-3 mb-4">
-
-                    {/* Avatar — clickable */}
-                    <Link to={`/profile/${sellerId}`} className="shrink-0 group" title="View profile">
-                      {sellerAvatar ? (
-                        <img
-                          src={sellerAvatar}
-                          alt={service.seller.name}
-                          className="w-12 h-12 rounded-full object-cover ring-2 ring-transparent group-hover:ring-stripe-purple transition-all"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-stripe-purple flex items-center justify-center text-white font-bold ring-2 ring-transparent group-hover:ring-stripe-purple transition-all">
-                          {sellerInitials}
-                        </div>
-                      )}
-                    </Link>
-
-                    <div>
-                      {/* Name — clickable */}
-                      <Link
-                        to={`/profile/${sellerId}`}
-                        className="font-semibold text-stripe-slate hover:text-stripe-purple transition-colors"
-                      >
-                        {service.seller.name}
-                      </Link>
-                      <div className="text-xs text-stripe-muted">
-                        {service.seller.department}
-                        {service.seller.yearOfStudy ? ` · ${service.seller.yearOfStudy}` : ''}
+                isSendiYou && service.identityHidden ? (
+                  <>
+                    <h4 className="font-semibold text-stripe-slate mb-3 text-sm">About the Poster</h4>
+                    <div className="flex items-center gap-3 mb-4 bg-pink-50/50 border border-pink-100 p-3 rounded-xl">
+                      <div className="shrink-0 w-12 h-12 rounded-full bg-pink-100 border border-pink-200 flex items-center justify-center text-pink-500">
+                        <EyeOff className="h-5 w-5" />
                       </div>
-                      {service.seller.rating > 0 && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-semibold text-stripe-slate">{service.seller.rating}</span>
-                          <span className="text-xs text-stripe-muted">· {service.seller.reviewCount} orders</span>
+                      <div>
+                        <div className="font-semibold text-pink-600 flex items-center gap-1">
+                          {service.displayName || 'Anonymous Student'}
                         </div>
-                      )}
+                        <div className="text-xs text-stripe-muted">
+                          Identity Hidden 🔒
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <Link
-                    to={`/profile/${sellerId}`}
-                    id="view-seller-profile"
-                    className="btn-ghost text-sm justify-center w-full"
-                  >
-                    View full profile <ChevronRight className="h-3.5 w-3.5" />
-                  </Link>
-                </>
+                    <div className="text-xs text-stripe-muted text-center italic bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      This user chose to post anonymously. You can request to reveal identities mutually once you accept the connection.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="font-semibold text-stripe-slate mb-3 text-sm">About the Seller</h4>
+                    <div className="flex items-center gap-3 mb-4">
+
+                      {/* Avatar — clickable */}
+                      <Link to={`/profile/${sellerId}`} className="shrink-0 group" title="View profile">
+                        {sellerAvatar ? (
+                          <img
+                            src={sellerAvatar}
+                            alt={service.seller.name}
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-transparent group-hover:ring-stripe-purple transition-all"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-stripe-purple flex items-center justify-center text-white font-bold ring-2 ring-transparent group-hover:ring-stripe-purple transition-all">
+                            {sellerInitials}
+                          </div>
+                        )}
+                      </Link>
+
+                      <div>
+                        {/* Name — clickable */}
+                        <Link
+                          to={`/profile/${sellerId}`}
+                          className="font-semibold text-stripe-slate hover:text-stripe-purple transition-colors"
+                        >
+                          {service.seller.name}
+                        </Link>
+                        <div className="text-xs text-stripe-muted">
+                          {service.seller.department}
+                          {service.seller.yearOfStudy ? ` · ${service.seller.yearOfStudy}` : ''}
+                        </div>
+                        {service.seller.rating > 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-semibold text-stripe-slate">{service.seller.rating}</span>
+                            <span className="text-xs text-stripe-muted">· {service.seller.reviewCount} orders</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      to={`/profile/${sellerId}`}
+                      id="view-seller-profile"
+                      className="btn-ghost text-sm justify-center w-full"
+                    >
+                      View full profile <ChevronRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </>
+                )
               )}
 
             </div>

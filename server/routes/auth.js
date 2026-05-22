@@ -31,6 +31,7 @@ const buildUserPayload = (u) => ({
   reviewCount: u.review_count,
   isEmailVerified: u.is_email_verified,
   dob: u.dob,
+  gender: u.gender || null,
   idCardImageUrl: u.id_card_image_url,
   instagramUrl: u.instagram_url,
   facebookUrl: u.facebook_url,
@@ -58,7 +59,7 @@ const sendToken = (user, statusCode, res, message = 'Success') => {
 // ─────────────────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, department, yearOfStudy, bio, role } = req.body;
+    const { name, email, password, department, yearOfStudy, bio, role, gender } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
@@ -107,6 +108,7 @@ router.post('/register', async (req, res) => {
         year_of_study: yearOfStudy || '',
         bio: bio || '',
         role: dbRole,
+        gender: gender || null,
         is_email_verified: false,
         is_onboarding_complete: false,
         email_verification_token: hashedOtp,

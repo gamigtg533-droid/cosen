@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   BookOpen, Code, Palette, UtensilsCrossed, Database, Music,
   Plus, X, ChevronRight, Loader, CheckCircle, AlertCircle,
-  Briefcase, Clock, DollarSign, Tag, FileText, Zap, LogIn, Camera, ImageIcon, Trophy
+  Briefcase, Clock, DollarSign, Tag, FileText, Zap, LogIn, Camera, ImageIcon, Trophy, Heart, Eye, EyeOff
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
@@ -15,6 +15,7 @@ const CATEGORIES = [
   { value: 'Food Friendship', label: 'Food Friendship', icon: UtensilsCrossed, color: '#FF6348' },
   { value: 'Photography', label: 'Photography', icon: Camera, color: '#00B2FF' },
   { value: 'Playground', label: 'Playground', icon: Trophy, color: '#F59E0B' },
+  { value: 'SendiYou', label: 'SendiYou 💌', icon: Heart, color: '#EC4899' },
   { value: 'Other Talents', label: 'Other Talents', icon: Music, color: '#A855F7' },
 ];
 
@@ -65,6 +66,7 @@ const catBg = {
   'Food Friendship': 'linear-gradient(135deg,#FFF5F0,#FFE4D6)',
   'Photography': 'linear-gradient(135deg,#EAF8FF,#CBEFFF)',
   'Playground': 'linear-gradient(135deg,#FEF3C7,#FDE68A)',
+  'SendiYou': 'linear-gradient(135deg,#FFF0F8,#FFD6EB)',
   'Other Talents': 'linear-gradient(135deg,#F8F0FF,#EEDDFF)',
 };
 
@@ -90,6 +92,10 @@ export default function PostService() {
     location: '',
     bookedCampus: 'no',
     playerCount: '',
+    // SendiYou fields
+    displayName: '',
+    preferredGender: 'Any',
+    identityHidden: false,
   });
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState({});
@@ -216,6 +222,14 @@ export default function PostService() {
       e.description = 'Description must be at least 30 characters.';
     if (!form.category)
       e.category = 'Please select a category.';
+
+    // SendiYou-specific
+    if (form.category === 'SendiYou') {
+      if (!form.displayName || !form.displayName.trim())
+        e.displayName = 'Please enter a display name.';
+      return e; // no price/delivery validation for SendiYou
+    }
+
     if ((form.category === 'Study Helper' || form.category === 'Art & Design' || form.category === 'Food Friendship' || form.category === 'Photography') && !form.subCategory)
       e.subCategory = 'Please select a service type.';
     if (form.category === 'Photography' && (!form.cameraModel || !form.cameraModel.trim()))
@@ -279,11 +293,17 @@ export default function PostService() {
         category: form.category,
         subCategory: form.subCategory,
         isNegotiable: form.isNegotiable,
-        price: Number(form.price),
-        deliveryDays: Number(form.deliveryDays),
+        price: form.category === 'SendiYou' ? 0 : Number(form.price),
+        deliveryDays: form.category === 'SendiYou' ? 7 : Number(form.deliveryDays),
         tags: form.tags,
         coverImageUrl: form.coverImageUrl,
         portfolioImages: form.portfolioImages,
+        // SendiYou specific
+        ...(form.category === 'SendiYou' && {
+          displayName: form.displayName.trim(),
+          preferredGender: form.preferredGender,
+          identityHidden: form.identityHidden,
+        }),
       };
 
       let serviceId;
@@ -648,6 +668,109 @@ export default function PostService() {
             </div>
           )}
 
+          {/* ── SendiYou Connection Fields ── */}
+          {form.category === 'SendiYou' && (
+            <div className="stripe-card bg-white p-6 space-y-6" style={{ border: '2px solid #FBCFE8' }}>
+              <div className="border-b border-pink-100 pb-4">
+                <h3 className="font-display font-bold text-stripe-slate text-lg flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-pink-500 fill-pink-500" />
+                  <span>SendiYou Connection Details</span>
+                </h3>
+                <p className="text-xs text-stripe-muted mt-1">
+                  Set up your anonymous campus connection request. Your real identity can optionally be hidden.
+                </p>
+              </div>
+
+              {/* Display Name */}
+              <div>
+                <label htmlFor="svc-display-name" className="form-label flex items-center gap-2 mb-2">
+                  <span>Your Display Name <span className="text-red-500">*</span></span>
+                </label>
+                <input
+                  type="text"
+                  id="svc-display-name"
+                  className="stripe-input"
+                  placeholder="e.g. Stargazer, Campus Foodie, Night Owl..."
+                  value={form.displayName || ''}
+                  onChange={e => {
+                    setForm(f => ({ ...f, displayName: e.target.value }));
+                    setErrors(er => ({ ...er, displayName: undefined }));
+                  }}
+                  maxLength={40}
+                />
+                {errors.displayName
+                  ? <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.displayName}</p>
+                  : <p className="mt-1.5 text-xs text-stripe-muted">This is the name shown publicly (not your real name unless you want).</p>}
+              </div>
+
+              {/* Preferred Gender */}
+              <div>
+                <label className="form-label flex items-center gap-2 mb-3">
+                  <span>I want to connect with a...</span>
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {['Male', 'Female', 'Any'].map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, preferredGender: g }))}
+                      className="py-3 px-3 rounded-xl border-2 font-semibold text-sm transition-all duration-200 text-center"
+                      style={{
+                        borderColor: form.preferredGender === g ? '#EC4899' : '#E6EBF1',
+                        background: form.preferredGender === g ? '#FFF0F8' : '#FAFAFA',
+                        color: form.preferredGender === g ? '#BE185D' : '#64748B',
+                        boxShadow: form.preferredGender === g ? '0 0 0 3px #EC489922' : 'none',
+                      }}
+                    >
+                      {g === 'Male' ? '👨 Male' : g === 'Female' ? '👩 Female' : '🌈 Any Gender'}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-stripe-muted">Only users of the selected gender can accept your connection request.</p>
+              </div>
+
+              {/* Identity Hide Toggle */}
+              <div>
+                <label className="form-label flex items-center gap-2 mb-3">
+                  <span>Hide my identity on the platform?</span>
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, identityHidden: true }))}
+                    className="flex-1 py-3 px-4 rounded-xl border-2 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2"
+                    style={{
+                      borderColor: form.identityHidden ? '#EC4899' : '#E6EBF1',
+                      background: form.identityHidden ? '#FFF0F8' : '#FAFAFA',
+                      color: form.identityHidden ? '#BE185D' : '#64748B',
+                      boxShadow: form.identityHidden ? '0 0 0 3px #EC489922' : 'none',
+                    }}
+                  >
+                    <EyeOff className="h-4 w-4" /> Yes, stay anonymous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, identityHidden: false }))}
+                    className="flex-1 py-3 px-4 rounded-xl border-2 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2"
+                    style={{
+                      borderColor: !form.identityHidden ? '#10B981' : '#E6EBF1',
+                      background: !form.identityHidden ? '#F0FDF4' : '#FAFAFA',
+                      color: !form.identityHidden ? '#065F46' : '#64748B',
+                      boxShadow: !form.identityHidden ? '0 0 0 3px #10B98122' : 'none',
+                    }}
+                  >
+                    <Eye className="h-4 w-4" /> No, show my profile
+                  </button>
+                </div>
+                {form.identityHidden && (
+                  <div className="mt-3 text-xs bg-pink-50 border border-pink-200 text-pink-700 rounded-lg p-3 leading-relaxed">
+                    🔒 <strong>Anonymous Mode:</strong> Your real name, photo, and profile will be hidden from all platform users. This post will also not appear in your public profile.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── Portfolio / Past Work Samples ── */}
           {(form.category === 'Art & Design' || form.category === 'Photography') && (
             <div className="stripe-card bg-white p-6">
@@ -904,7 +1027,8 @@ export default function PostService() {
             </div>
           </div>
 
-          {/* ── Price & Delivery ── */}
+          {/* ── Price & Delivery (hidden for SendiYou) ── */}
+          {form.category !== 'SendiYou' && (
           <div className="stripe-card bg-white p-6">
             <div className="grid sm:grid-cols-2 gap-6">
               {/* Price */}
@@ -972,6 +1096,7 @@ export default function PostService() {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Tags ── */}
           <div className="stripe-card bg-white p-6">

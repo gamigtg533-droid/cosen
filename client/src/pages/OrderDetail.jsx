@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
   Send, Loader, Clock, CheckCircle, AlertTriangle,
-  Shield, Check, Info, MessageCircle, Star, Trophy
+  Shield, Check, Info, MessageCircle, Star, Trophy, Heart, Eye, EyeOff, Timer
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useRazorpay from '../hooks/useRazorpay';
@@ -43,6 +43,12 @@ export default function OrderDetail() {
   const [priceSuccessMsg, setPriceSuccessMsg] = useState('');
   const [payLoading, setPayLoading] = useState(false);
   const openCheckout = useRazorpay();
+
+  // SendiYou reveal state
+  const [revealLoading, setRevealLoading] = useState(false);
+
+  // SendiYou expiry countdown
+  const [timeLeft, setTimeLeft] = useState('');
 
   /* ── Fetch order + messages ─────────────────────────── */
   useEffect(() => {
@@ -325,6 +331,35 @@ export default function OrderDetail() {
     }
   };
 
+  /* ── SendiYou Reveal Toggle ────────────────────────────── */
+  const handleRevealToggle = async () => {
+    setRevealLoading(true);
+    try {
+      const { data } = await api.put(`/sendiyou/order/${id}/reveal`);
+      if (data.success) setOrder(data.order);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to toggle profile reveal.');
+    } finally {
+      setRevealLoading(false);
+    }
+  };
+
+  /* ── SendiYou expiry countdown ─────────────────────────── */
+  useEffect(() => {
+    if (!order?.service?.expiresAt) return;
+    const tick = () => {
+      const diff = new Date(order.service.expiresAt) - Date.now();
+      if (diff <= 0) { setTimeLeft('Expired'); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(`${d}d ${h}h ${m}m`);
+    };
+    tick();
+    const interval = setInterval(tick, 60000);
+    return () => clearInterval(interval);
+  }, [order?.service?.expiresAt]);
+
   /* ── WhatsApp link builder ──────────────────────────── */
   /* Only the SELLER's phone needs to be verified. Buyer's is optional. */
   const buildWhatsApp = () => {
@@ -359,10 +394,19 @@ export default function OrderDetail() {
   const waLink     = buildWhatsApp();
 
   const isPlayground = order.service?.category === 'Playground';
+  const isSendiYou = order.service?.category === 'SendiYou';
   const myVote = isBuyer ? order.buyerResult : order.sellerResult;
   const hasVoted = !!myVote;
   const otherVote = isBuyer ? order.sellerResult : order.buyerResult;
   const hasOtherVoted = !!otherVote;
+
+  // SendiYou reveal helpers
+  const myRevealed    = isBuyer ? order.buyerRevealed  : order.sellerRevealed;
+  const otherRevealed = isBuyer ? order.sellerRevealed : order.buyerRevealed;
+  const isMutualReveal = order.buyerRevealed && order.sellerRevealed;
+  const sendiExpiresAt = order.service?.expiresAt;
+  const isExpired = sendiExpiresAt && new Date(sendiExpiresAt) < new Date();
+
 
   // Status badge
   const statusConfig = {
@@ -773,7 +817,82 @@ export default function OrderDetail() {
               </div>
             </div>
 
-            {/* WhatsApp info card */}
+            {/* ── SendiYou Connection Panel ── */}
+            {isSendiYou && (
+              <div className="stripe-card p-5 space-y-4" style={{ border: '2px solid #FBCFE8', background: 'linear-gradient(135deg,#FFF0F8,#FFF)' }}>
+                {/* Header */}
+                <div className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-pink-500 fill-pink-100 stroke-pink-400" />
+                  <span className="font-bold text-stripe-slate text-sm">SendiYou Connection</span>
+                </div>
+
+                {/* Expiry countdown */}
+                {sendiExpiresAt && (
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold ${isExpired ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-pink-50 text-pink-700 border border-pink-200'}`}>
+                    <Timer className="h-3.5 w-3.5 shrink-0" />
+                    {isExpired ? '⏰ This connection has expired' : `⏳ Expires in ${timeLeft}`}
+                  </div>
+                )}
+
+                {/* Profile Reveal Toggle */}
+                <div>
+                  <p className="text-xs text-stripe-muted mb-2">Share your profile with this person?</p>
+                  <button
+                    onClick={handleRevealToggle}
+                    disabled={revealLoading}
+                    className="w-full py-2.5 px-4 rounded-xl border-2 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2"
+                    style={{
+                      borderColor: myRevealed ? '#EC4899' : '#E6EBF1',
+                      background: myRevealed ? '#FFF0F8' : '#FAFAFA',
+                      color: myRevealed ? '#BE185D' : '#64748B',
+                    }}
+                  >
+                    {revealLoading ? <Loader className="h-4 w-4 animate-spin" /> : myRevealed ? <><Eye className="h-4 w-4" /> Profile Visible ✓</> : <><EyeOff className="h-4 w-4" /> Show My Profile</>}
+                  </button>
+                  <p className="text-[11px] text-stripe-muted mt-1.5 text-center">
+                    {otherRevealed
+                      ? isMutualReveal ? '🎉 Both of you have revealed your profiles!' : "👀 They've revealed their profile. Reveal yours to connect!"
+                      : myRevealed ? '⏳ Waiting for them to reveal their profile…' : 'Toggle to show your real profile to this person.'}
+                  </p>
+                </div>
+
+                {/* Mutual Profile Cards */}
+                {isMutualReveal && (
+                  <div className="space-y-3 border-t border-pink-100 pt-3">
+                    <p className="text-xs font-bold text-pink-700">🌟 You can now see each other!</p>
+                    {[
+                      { label: 'Them', person: isBuyer ? order.seller : order.buyer },
+                    ].map(({ label, person }) => (
+                      <div key={label} className="flex items-center gap-3 bg-white rounded-xl border border-pink-100 p-3">
+                        <img
+                          src={person.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(person.name)}&background=EC4899&color=fff&bold=true`}
+                          alt={person.name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-pink-200 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-stripe-slate text-sm truncate">{person.name}</p>
+                          <p className="text-xs text-stripe-muted">{person.department || 'Campus Student'}</p>
+                          {person.isPhoneVerified && person.phone && (
+                            <a
+                              href={`https://wa.me/${person.phone.replace(/[^0-9]/g, '')}?text=Hey! We matched on Cosen's SendiYou 💌`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                              style={{ background: '#25D36620', color: '#128C7E' }}
+                            >
+                              <svg viewBox="0 0 24 24" fill="#25D366" className="h-3 w-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                              WhatsApp
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* WhatsApp info card — hidden for SendiYou (handled above) */}
+            {!isSendiYou && (
             <div className="stripe-card bg-white p-5">
               <div className="flex items-center gap-2 mb-3">
                 <svg viewBox="0 0 24 24" fill={WA_GREEN} className="h-5 w-5 shrink-0">
@@ -791,6 +910,8 @@ export default function OrderDetail() {
                 </p>
               )}
             </div>
+            )}
+
 
             <div className="flex items-start gap-2 text-xs text-stripe-muted px-2">
               <Info className="h-4 w-4 shrink-0" />

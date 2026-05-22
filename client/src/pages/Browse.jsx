@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, Star, ChevronRight, Loader, X, BadgeCheck, ShoppingBag } from 'lucide-react';
+import { Search, SlidersHorizontal, Star, ChevronRight, Loader, X, BadgeCheck, ShoppingBag, Heart, Eye, EyeOff } from 'lucide-react';
 import api from '../lib/api';
 
 // Fallback mock data (shown when API is unavailable)
@@ -13,8 +13,9 @@ const MOCK = [
   { _id: '6', title: 'Portraits & Campus Event Shoots',             seller: { name: 'Meera S.', department: "Fine Arts '26" },         rating: 4.8, reviewCount: 9,  price: 999, category: 'Photography', avatarBg: '#00B2FF', initials: 'MS' },
 ];
 
-const CATS = ['All', 'Tech & Coding', 'Art & Design', 'Study Helper', 'Food Friendship', 'Photography', 'Playground', 'Other Talents'];
+const CATS = ['All', 'SendiYou', 'Tech & Coding', 'Art & Design', 'Study Helper', 'Food Friendship', 'Photography', 'Playground', 'Other Talents'];
 const catBg = {
+  'SendiYou':        'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
   'Tech & Coding':   'linear-gradient(135deg,#EEF0FF,#DDE0FF)',
   'Art & Design':    'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
   'Study Helper':    'linear-gradient(135deg,#E8FFF8,#C8FFF0)',
@@ -24,7 +25,7 @@ const catBg = {
   'Other Talents':   'linear-gradient(135deg,#F8F0FF,#EEDDFF)',
 };
 const catColor = {
-  'Tech & Coding': '#635BFF', 'Art & Design': '#FF6B9D', 'Study Helper': '#00D4AA',
+  'SendiYou': '#EC4899', 'Tech & Coding': '#635BFF', 'Art & Design': '#FF6B9D', 'Study Helper': '#00D4AA',
   'Food Friendship': '#FF6348', 'Photography': '#00B2FF', 'Playground': '#F59E0B', 'Other Talents': '#A855F7',
 };
 
@@ -286,7 +287,14 @@ export default function Browse() {
                 <div className="p-3 pb-0">
                   <div className="relative rounded-xl overflow-hidden"
                     style={{ aspectRatio: '4/3' }}>
-                    {hasCover ? (
+                    {s.category === 'SendiYou' && s.identityHidden ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-pink-400/20 to-rose-400/30">
+                        <div className="w-16 h-16 rounded-3xl bg-pink-500 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 animate-pulse">
+                          <Heart className="h-8 w-8 fill-white" />
+                        </div>
+                        <span className="text-[10px] uppercase font-bold text-pink-700 tracking-wider">Incognito Match</span>
+                      </div>
+                    ) : hasCover ? (
                       <img
                         src={s.coverImageUrl}
                         alt={s.title}
@@ -320,12 +328,20 @@ export default function Browse() {
 
                 {/* Card body */}
                 <div className="px-4 pt-4 pb-4">
-                  {/* Seller name + verified badge */}
+                  {/* Seller name / anonymous alias */}
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <h3 className="font-bold text-stripe-slate text-[15px] truncate">
-                      {s.seller?.name || 'Student'}
+                    <h3 className="font-bold text-stripe-slate text-[15px] truncate flex items-center gap-1">
+                      {s.category === 'SendiYou' && s.identityHidden ? (
+                        <span className="text-pink-600 flex items-center gap-1">
+                          <EyeOff className="h-3.5 w-3.5 shrink-0" /> {s.displayName || 'Anonymous'}
+                        </span>
+                      ) : (
+                        s.seller?.name || 'Student'
+                      )}
                     </h3>
-                    <BadgeCheck className="h-4.5 w-4.5 shrink-0" style={{ color: '#22c55e' }} />
+                    {!(s.category === 'SendiYou' && s.identityHidden) && (
+                      <BadgeCheck className="h-4.5 w-4.5 shrink-0" style={{ color: '#22c55e' }} />
+                    )}
                   </div>
 
                   {s.category === 'Playground' && (
@@ -337,6 +353,23 @@ export default function Browse() {
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
                           🏟️ Booking Pending
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {s.category === 'SendiYou' && (
+                    <div className="mb-2.5 flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-700 bg-pink-50 px-2 py-0.5 rounded border border-pink-200">
+                        💌 Preferred: {s.preferredGender || 'Any'}
+                      </span>
+                      {s.identityHidden ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                          🔒 Incognito
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          🔓 Public
                         </span>
                       )}
                     </div>
@@ -360,13 +393,22 @@ export default function Browse() {
                         {s.reviewCount || 0}
                       </span>
                     </div>
-                    <span className="text-xs font-bold px-3 py-1.5 rounded-full transition-colors"
-                      style={{
-                        background: '#F6F9FC',
-                        color: '#0A2540',
-                      }}>
-                      ₹{s.price?.toLocaleString('en-IN')}
-                    </span>
+                    {s.category === 'SendiYou' ? (
+                      <span className="text-[11px] font-bold px-3 py-1.5 rounded-full text-white transition-colors animate-pulse"
+                        style={{
+                          background: 'linear-gradient(135deg, #EC4899, #F43F5E)',
+                        }}>
+                        Connect →
+                      </span>
+                    ) : (
+                      <span className="text-xs font-bold px-3 py-1.5 rounded-full transition-colors"
+                        style={{
+                          background: '#F6F9FC',
+                          color: '#0A2540',
+                        }}>
+                        ₹{s.price?.toLocaleString('en-IN')}
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>
