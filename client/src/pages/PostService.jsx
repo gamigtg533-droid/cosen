@@ -96,6 +96,7 @@ export default function PostService() {
     displayName: '',
     preferredGender: 'Any',
     identityHidden: false,
+    groupSize: 2,
   });
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState({});
@@ -303,6 +304,7 @@ export default function PostService() {
           displayName: form.displayName.trim(),
           preferredGender: form.preferredGender,
           identityHidden: form.identityHidden,
+          groupSize: Number(form.groupSize) || 1,
         }),
       };
 
@@ -727,6 +729,38 @@ export default function PostService() {
                   ))}
                 </div>
                 <p className="mt-2 text-xs text-stripe-muted">Only users of the selected gender can accept your connection request.</p>
+              </div>
+
+              {/* Group Size */}
+              <div>
+                <label htmlFor="svc-group-size" className="form-label flex items-center gap-2 mb-2">
+                  <span>Group Size <span className="text-red-500">*</span></span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, groupSize: Math.max(1, (Number(f.groupSize) || 1) - 1) }))}
+                    className="w-10 h-10 rounded-xl border-2 border-stripe-border bg-slate-50 text-stripe-slate font-bold text-lg flex items-center justify-center hover:border-pink-400 hover:bg-pink-50 transition-all"
+                  >−</button>
+                  <input
+                    type="number"
+                    id="svc-group-size"
+                    className="stripe-input text-center w-24 font-bold text-lg"
+                    min={1}
+                    max={50}
+                    value={form.groupSize || 1}
+                    onChange={e => setForm(f => ({ ...f, groupSize: Math.max(1, Math.min(50, parseInt(e.target.value) || 1)) }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, groupSize: Math.min(50, (Number(f.groupSize) || 1) + 1) }))}
+                    className="w-10 h-10 rounded-xl border-2 border-stripe-border bg-slate-50 text-stripe-slate font-bold text-lg flex items-center justify-center hover:border-pink-400 hover:bg-pink-50 transition-all"
+                  >+</button>
+                  <span className="text-sm text-stripe-muted">
+                    {form.groupSize <= 1 ? '1 person only (private)' : `Up to ${form.groupSize} people can join`}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs text-stripe-muted">Set how many students can join this connection. e.g. 10 for a campus cricket team group chat.</p>
               </div>
 
               {/* Identity Hide Toggle */}

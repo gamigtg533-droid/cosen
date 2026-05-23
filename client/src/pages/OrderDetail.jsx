@@ -450,14 +450,14 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-          {/* ── LEFT: Chat ─────────────────────────────────── */}
-          <div className="flex-1 flex flex-col h-[65vh] stripe-card bg-white overflow-hidden">
+          {/* ── LEFT: Chat ────────────────────────────────────────── */}
+          <div className="flex-1 flex flex-col stripe-card bg-white overflow-hidden" style={{ height: '520px', minHeight: '400px' }}>
 
             {/* Chat header */}
-            <div className="p-4 border-b border-stripe-border bg-slate-50 flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3">
+            <div className="p-4 border-b border-stripe-border bg-slate-50 flex items-center justify-between gap-3 flex-wrap shrink-0">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-stripe-purple text-white flex items-center justify-center font-bold text-sm">
                     {otherParty.name?.split(' ').map(n => n[0]).join('').slice(0,2) || '?'}
@@ -472,6 +472,31 @@ export default function OrderDetail() {
                   <div className="font-semibold text-stripe-slate text-sm">{otherParty.name}</div>
                   <div className="text-xs text-stripe-muted">{isBuyer ? 'Seller' : 'Buyer'}</div>
                 </div>
+
+                {/* Group members badge when groupSize > 1 */}
+                {order.service?.groupSize > 1 && order.buyerIds?.length > 0 && (
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <span className="text-xs text-stripe-muted font-medium">
+                      👥 {order.buyerIds.length}/{order.service.groupSize} joined
+                    </span>
+                    <div className="flex -space-x-1.5">
+                      {order.buyerIds.slice(0, 5).map((uid, i) => (
+                        <div
+                          key={uid}
+                          className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 border-2 border-white flex items-center justify-center text-[9px] text-white font-bold"
+                          title={`Member ${i + 1}`}
+                        >
+                          {i + 1}
+                        </div>
+                      ))}
+                      {order.buyerIds.length > 5 && (
+                        <div className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[9px] text-slate-600 font-bold">
+                          +{order.buyerIds.length - 5}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* WhatsApp button */}

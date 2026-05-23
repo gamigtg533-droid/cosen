@@ -202,10 +202,15 @@ export default function ServiceDetail() {
     setPayError('');
     try {
       const { data } = await api.post(`/sendiyou/${service._id || service.id}/accept`);
-      if (data.success) {
+      if (data.success || data.orderId) {
         navigate(`/orders/${data.orderId}`);
       }
     } catch (err) {
+      // If already joined, redirect to the existing order
+      if (err.response?.data?.orderId) {
+        navigate(`/orders/${err.response.data.orderId}`);
+        return;
+      }
       setPayError(err.response?.data?.message || 'Failed to accept connection.');
     } finally {
       setAcceptLoading(false);
@@ -480,7 +485,7 @@ export default function ServiceDetail() {
                 </div>
               )}
 
-              {/* SendiYou Preferred Gender Info Panel */}
+              {/* SendiYou Info Panel */}
               {isSendiYou && (
                 <div className="bg-pink-50/40 border border-pink-100 rounded-xl p-4 mb-4 space-y-2.5">
                   <div className="flex items-center justify-between text-xs border-b border-pink-100/60 pb-2">
@@ -489,6 +494,17 @@ export default function ServiceDetail() {
                       {service.preferredGender === 'Any' ? 'Any Gender ⚧' : `${service.preferredGender} Only 👤`}
                     </span>
                   </div>
+
+                  {/* Group Size Indicator */}
+                  {service.groupSize > 1 && (
+                    <div className="flex items-center justify-between text-xs py-1">
+                      <span className="text-stripe-muted font-medium">👥 Group Connection</span>
+                      <span className="font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                        Up to {service.groupSize} students
+                      </span>
+                    </div>
+                  )}
+
                   {service.identityHidden ? (
                     <div className="flex items-center gap-2 text-[11px] text-rose-600 font-semibold">
                       <EyeOff className="h-3.5 w-3.5" />
@@ -501,7 +517,9 @@ export default function ServiceDetail() {
                     </div>
                   )}
                   <div className="text-[11px] text-stripe-muted italic pt-1 leading-normal">
-                    Matches expire after 7 days once accepted. Profile reveal is mutual.
+                    {service.groupSize > 1
+                      ? `Up to ${service.groupSize} students can join and chat together. Chat expires after 7 days.`
+                      : 'Matches expire after 7 days once accepted. Profile reveal is mutual.'}
                   </div>
                 </div>
               )}

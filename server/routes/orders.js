@@ -272,12 +272,14 @@ const mapOrder = (row, currentUserId = null) => {
       preferredGender: service.preferred_gender,
       identityHidden: service.identity_hidden,
       displayName: service.display_name,
-      acceptedById: service.accepted_by_id
+      acceptedById: service.accepted_by_id,
+      groupSize: service.group_size || 1,
     } : undefined,
     buyer: mappedBuyer,
     seller: mappedSeller,
     buyerPhone: buyerPhoneVal,
     buyerPhoneVerified: buyerPhoneVerifiedVal,
+    buyerIds: order.buyer_ids || [],
   };
 };
 
@@ -406,19 +408,20 @@ router.put('/:id/set-price', protect, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.get('/', protect, async (req, res) => {
   try {
+    const userId = req.user._id;
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
         *,
-        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id),
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
         buyer:users!buyer_id(id, name, avatar_url, avatar_public_id),
         seller:users!seller_id(id, name, avatar_url, avatar_public_id)
       `)
-      .or(`buyer_id.eq.${req.user._id},seller_id.eq.${req.user._id}`)
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId},buyer_ids.cs.{${userId}}`)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    res.status(200).json({ success: true, orders: orders.map(o => mapOrder(o, req.user._id)) });
+    res.status(200).json({ success: true, orders: orders.map(o => mapOrder(o, userId)) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -433,7 +436,7 @@ router.get('/:id', protect, async (req, res) => {
       .from('orders')
       .select(`
         *,
-        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id),
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
         buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
         seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, department, phone, is_phone_verified),
         review:reviews(rating, comment, created_at)
@@ -445,7 +448,9 @@ router.get('/:id', protect, async (req, res) => {
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
     const isParty =
-      order.buyer_id === req.user._id || order.seller_id === req.user._id;
+      order.buyer_id === req.user._id ||
+      order.seller_id === req.user._id ||
+      (order.buyer_ids || []).includes(req.user._id);
     if (!isParty && req.user.role !== 'admin')
       return res.status(403).json({ success: false, message: 'Access denied' });
 

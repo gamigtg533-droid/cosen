@@ -55,6 +55,7 @@ const mapService = (row) => {
     identityHidden: isHidden,
     acceptedById: svc.accepted_by_id || null,
     expiresAt: svc.expires_at || null,
+    groupSize: svc.group_size || 1,
     createdAt: svc.created_at,
     updatedAt: svc.updated_at,
     seller: mappedSeller,
@@ -175,7 +176,7 @@ router.post('/', protect, async (req, res) => {
 
     const { title, description, category, subCategory, isNegotiable, price, deliveryDays, tags, coverImageUrl, portfolioImages,
       // SendiYou specific fields
-      displayName, preferredGender, identityHidden
+      displayName, preferredGender, identityHidden, groupSize
     } = req.body;
 
     const isSendiYou = category === 'SendiYou';
@@ -210,6 +211,7 @@ router.post('/', protect, async (req, res) => {
       insertData.display_name = displayName || req.user.name;
       insertData.preferred_gender = preferredGender || 'Any';
       insertData.identity_hidden = !!identityHidden;
+      insertData.group_size = Math.max(1, Math.min(50, parseInt(groupSize) || 1));
     }
 
     const { data: service, error } = await supabase
