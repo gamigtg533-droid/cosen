@@ -463,7 +463,7 @@ export default function Landing() {
               <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(ellipse at 30% 50%, #635BFF, transparent 60%), radial-gradient(ellipse at 70% 50%, #EC4899, transparent 60%)' }} />
               <div className="relative z-10 px-10 py-14 md:py-16 text-center">
                 <p className="text-white/60 font-semibold text-sm uppercase tracking-widest mb-4">The Cosen Difference</p>
-                <h3 className="text-white font-extrabold text-2xl md:text-4xl max-w-3xl mx-auto leading-tight mb-6">
+                <h3 className="text-white font-extrabold text-2xl md:text-4xl max-w-3xl mx-auto leading-tight mb-6" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
                   "Not just a marketplace — a campus operating system
                   <span style={{ color: '#A78BFA' }}> where every student is both a provider and a seeker."
                   </span>
