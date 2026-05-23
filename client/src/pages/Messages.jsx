@@ -85,16 +85,21 @@ export default function Messages() {
   // ── Socket.io ───────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
+    const token = localStorage.getItem('cosen_token');
     const socket = io(SOCKET_URL, {
-      withCredentials: true,
+      auth: { token },
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;
     socket.on('connect',    () => {
+      console.log('⚡ Socket connected successfully');
       // Register this user for presence tracking
       socket.emit('register_user', user._id);
       // Request current online users list
       socket.emit('get_online_users');
+    });
+    socket.on('connect_error', (err) => {
+      console.warn('⚠️ Socket connection error, falling back to polling/REST:', err.message);
     });
 
     // Listen for presence events
@@ -150,19 +155,27 @@ export default function Messages() {
   }, [messages]);
 
   // ── Send message ────────────────────────────────────────────
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     const content = newMsg.trim();
     if (!content || sending || !activeId) return;
     setSending(true);
     setNewMsg('');
     inputRef.current?.focus();
-    socketRef.current?.emit('send_dm', {
-      conversationId: activeId,
-      senderId: user._id,
-      content,
-    });
-    setSending(false);
+    
+    try {
+      const { data } = await api.post(`/conversations/${activeId}/messages`, { content });
+      if (data.success && data.message) {
+        setMessages(prev => {
+          if (prev.some(m => m._id === data.message._id)) return prev;
+          return [...prev, data.message];
+        });
+      }
+    } catch (err) {
+      console.error('Failed to send DM message:', err);
+    } finally {
+      setSending(false);
+    }
   };
 
   // ── Select conversation ─────────────────────────────────────

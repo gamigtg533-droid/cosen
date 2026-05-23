@@ -97,6 +97,8 @@ const io = new Server(server, {
   },
 });
 
+app.set('io', io);
+
 // ── Socket.io Connection ────────────────────────────────────
 const { supabase } = require('./config/db');
 

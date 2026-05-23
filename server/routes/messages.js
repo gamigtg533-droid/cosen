@@ -87,7 +87,16 @@ router.post('/order/:orderId', protect, async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.status(201).json({ success: true, message: mapMessage(message) });
+
+    const mapped = mapMessage(message);
+
+    // Broadcast message to Socket.io order room in real-time
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.params.orderId).emit('receive_message', mapped);
+    }
+
+    res.status(201).json({ success: true, message: mapped });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }

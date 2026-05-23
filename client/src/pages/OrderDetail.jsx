@@ -79,15 +79,21 @@ export default function OrderDetail() {
     const isBuyer = order.buyer._id === user._id;
     const otherPartyId = isBuyer ? order.seller._id : order.buyer._id;
 
+    const token = localStorage.getItem('cosen_token');
     const socket = io(SOCKET_URL, {
-      withCredentials: true,
+      auth: { token },
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.log('⚡ Socket connected successfully');
       socket.emit('register_user', user._id);
       socket.emit('get_online_users');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('⚠️ Socket connection error, falling back to polling/REST:', err.message);
     });
 
     socket.on('online_users_list', (users) => {
@@ -121,7 +127,7 @@ export default function OrderDetail() {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  /* ── Send message (via socket only — server saves it) ── */
+  /* ── Send message (via REST API — server broadcasts via socket) ── */
   const handleSend = async (e) => {
     e.preventDefault();
     const content = newMessage.trim();
@@ -132,12 +138,15 @@ export default function OrderDetail() {
     inputRef.current?.focus();
 
     try {
-      // Emit to server — server saves to DB and broadcasts back
-      socketRef.current?.emit('send_message', {
-        orderId:  id,
-        senderId: user._id,
-        content,
-      });
+      const { data } = await api.post(`/messages/order/${id}`, { content });
+      if (data.success && data.message) {
+        setMessages(prev => {
+          if (prev.some(m => m._id === data.message._id)) return prev;
+          return [...prev, data.message];
+        });
+      }
+    } catch (err) {
+      console.error('Failed to send order message:', err);
     } finally {
       setSending(false);
     }

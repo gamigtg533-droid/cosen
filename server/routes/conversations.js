@@ -220,7 +220,15 @@ router.post('/:id/messages', protect, async (req, res) => {
       .update({ last_message: content.trim(), last_message_at: new Date().toISOString() })
       .eq('id', id);
 
-    res.status(201).json({ success: true, message: mapDM(msg) });
+    const mapped = mapDM(msg);
+
+    // Broadcast message to socket room in real-time
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`dm_${id}`).emit('receive_dm', mapped);
+    }
+
+    res.status(201).json({ success: true, message: mapped });
   } catch (err) {
     console.error('POST /conversations/:id/messages error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
