@@ -414,10 +414,12 @@ export default function OrderDetail() {
   const otherVote = isBuyer ? order.sellerResult : order.buyerResult;
   const hasOtherVoted = !!otherVote;
 
-  // SendiYou reveal helpers
-  const myRevealed    = isBuyer ? order.buyerRevealed  : order.sellerRevealed;
-  const otherRevealed = isBuyer ? order.sellerRevealed : order.buyerRevealed;
-  const isMutualReveal = order.buyerRevealed && order.sellerRevealed;
+  // SendiYou reveal helpers — independent per-user reveal (no mutual consent required)
+  // revealedIds: array of user IDs who have clicked "Show my profile"
+  const revealedIds   = order.revealedIds || [];
+  const myRevealed    = revealedIds.includes(user._id);
+  // People whose profiles I can see = those who have revealed (excluding myself)
+  const revealedOthers = revealedIds.filter(rid => rid !== user._id);
   const sendiExpiresAt = order.service?.expiresAt;
   const isExpired = sendiExpiresAt && new Date(sendiExpiresAt) < new Date();
 
@@ -930,7 +932,7 @@ export default function OrderDetail() {
 
                 {/* Profile Reveal Toggle */}
                 <div>
-                  <p className="text-xs text-stripe-muted mb-2">Share your profile with this person?</p>
+                  <p className="text-xs text-stripe-muted mb-2">Share your profile with everyone in this chat?</p>
                   <button
                     onClick={handleRevealToggle}
                     disabled={revealLoading}
@@ -941,23 +943,34 @@ export default function OrderDetail() {
                       color: myRevealed ? '#BE185D' : '#64748B',
                     }}
                   >
-                    {revealLoading ? <Loader className="h-4 w-4 animate-spin" /> : myRevealed ? <><Eye className="h-4 w-4" /> Profile Visible ✓</> : <><EyeOff className="h-4 w-4" /> Show My Profile</>}
+                    {revealLoading ? <Loader className="h-4 w-4 animate-spin" /> : myRevealed ? <><Eye className="h-4 w-4" /> My Profile Visible ✓</> : <><EyeOff className="h-4 w-4" /> Show My Profile</>}
                   </button>
                   <p className="text-[11px] text-stripe-muted mt-1.5 text-center">
-                    {otherRevealed
-                      ? isMutualReveal ? '🎉 Both of you have revealed your profiles!' : "👀 They've revealed their profile. Reveal yours to connect!"
-                      : myRevealed ? '⏳ Waiting for them to reveal their profile…' : 'Toggle to show your real profile to this person.'}
+                    {myRevealed
+                      ? revealedOthers.length > 0
+                        ? `👀 ${revealedOthers.length} person(s) revealed their profile too!`
+                        : '⏳ Your profile is visible. Waiting for others to reveal…'
+                      : revealedOthers.length > 0
+                        ? `🌟 ${revealedOthers.length} person(s) have revealed — reveal yours to see them!`
+                        : 'Click to share your real profile with everyone in this chat.'}
                   </p>
                 </div>
 
-                {/* Mutual Profile Cards */}
-                {isMutualReveal && (
+                {/* Revealed Profiles — show cards for anyone who revealed */}
+                {revealedOthers.length > 0 && (
                   <div className="space-y-3 border-t border-pink-100 pt-3">
-                    <p className="text-xs font-bold text-pink-700">🌟 You can now see each other!</p>
+                    <p className="text-xs font-bold text-pink-700">🌟 Revealed profiles you can see:</p>
                     {[
-                      { label: 'Them', person: isBuyer ? order.seller : order.buyer },
-                    ].map(({ label, person }) => (
-                      <div key={label} className="flex items-center gap-3 bg-white rounded-xl border border-pink-100 p-3">
+                      // Seller if they revealed
+                      order.sellerRevealed || revealedIds.includes(order.seller?._id)
+                        ? { label: 'Poster', person: order.seller }
+                        : null,
+                      // Buyer if they revealed
+                      revealedIds.includes(order.buyer?._id) && order.buyer?._id !== user._id
+                        ? { label: 'Member', person: order.buyer }
+                        : null,
+                    ].filter(Boolean).map(({ label, person }) => person && (
+                      <div key={person._id} className="flex items-center gap-3 bg-white rounded-xl border border-pink-100 p-3">
                         <img
                           src={person.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(person.name)}&background=EC4899&color=fff&bold=true`}
                           alt={person.name}
@@ -965,7 +978,7 @@ export default function OrderDetail() {
                         />
                         <div className="min-w-0">
                           <p className="font-bold text-stripe-slate text-sm truncate">{person.name}</p>
-                          <p className="text-xs text-stripe-muted">{person.department || 'Campus Student'}</p>
+                          <p className="text-xs text-stripe-muted">{label} · {person.department || 'Campus Student'}</p>
                           {person.isPhoneVerified && person.phone && (
                             <a
                               href={`https://wa.me/${person.phone.replace(/[^0-9]/g, '')}?text=Hey! We matched on Cosen's SendiYou 💌`}

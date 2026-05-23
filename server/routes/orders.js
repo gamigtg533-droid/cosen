@@ -256,6 +256,7 @@ const mapOrder = (row, currentUserId = null) => {
     updatedAt: order.updated_at,
     buyerRevealed: !!order.buyer_revealed,
     sellerRevealed: !!order.seller_revealed,
+    revealedIds: order.revealed_ids || [],
     review: (review && review.length > 0) ? {
       rating: review[0].rating,
       comment: review[0].comment,

@@ -151,7 +151,7 @@ router.post('/:serviceId/accept', protect, async (req, res) => {
 
 
 // ─────────────────────────────────────────────────────────────
-// PUT /api/sendiyou/order/:orderId/reveal — Toggle profile reveal
+// PUT /api/sendiyou/order/:orderId/reveal — Toggle profile reveal (individual & group)
 // ─────────────────────────────────────────────────────────────
 router.put('/order/:orderId/reveal', protect, async (req, res) => {
   try {
@@ -167,17 +167,20 @@ router.put('/order/:orderId/reveal', protect, async (req, res) => {
     if (fetchErr || !order) return res.status(404).json({ success: false, message: 'Order not found' });
     if (order.service?.category !== 'SendiYou') return res.status(400).json({ success: false, message: 'Not a SendiYou order' });
 
-    const isBuyer = order.buyer_id === userId;
-    const isSeller = order.seller_id === userId;
-    if (!isBuyer && !isSeller) return res.status(403).json({ success: false, message: 'Unauthorized' });
+    // Any party — buyer, seller, or group member — can toggle their reveal
+    const allPartyIds = [order.buyer_id, order.seller_id, ...(order.buyer_ids || [])];
+    if (!allPartyIds.includes(userId)) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const update = isBuyer
-      ? { buyer_revealed: !order.buyer_revealed }
-      : { seller_revealed: !order.seller_revealed };
+    // Toggle: add if not in array, remove if already in
+    const currentRevealed = order.revealed_ids || [];
+    const isRevealed = currentRevealed.includes(userId);
+    const newRevealedIds = isRevealed
+      ? currentRevealed.filter(id => id !== userId)   // un-reveal
+      : [...currentRevealed, userId];                  // reveal
 
     const { data: updated, error: updateErr } = await supabase
       .from('orders')
-      .update(update)
+      .update({ revealed_ids: newRevealedIds })
       .eq('id', orderId)
       .select(`
         *,
