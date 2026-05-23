@@ -392,4 +392,25 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 
 ---
 
-*Last updated: May 19, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
+### May 23, 2026 — Real-time Hybrid Chat Architecture & SendiYou Group Connections
+**Objective**: Overhaul the chat delivery system to ensure absolute reliability across all deployment environments (bypassing CORS/Cookie limits) and expand the **SendiYou** category to support multi-user group chats for campus activities.
+
+**Features Implemented:**
+- **Hybrid Real-time Chat Architecture**: 
+  - Restructured the messaging engine to use a **Hybrid REST + Socket.io** model.
+  - Replaced purely socket-based `.emit()` message delivery with robust REST endpoints (`POST /api/conversations/:id/messages` and `POST /api/sendiyou/order/:orderId/messages`).
+  - Added secure JWT-based handshake configuration (`auth: { token }`) for Socket.io connections, ensuring real-time presence and instant delivery broadcasting to active clients.
+  - Implemented **Optimistic UI Updates** on the frontend, rendering sent messages instantly while the server processes the database commit.
+- **SendiYou Group Connections (Multi-User Matching)**:
+  - Added a `group_size` capacity parameter to the `services` table and a `buyer_ids` array to the `orders` table.
+  - Updated the frontend `PostService.jsx` wizard with a dedicated, stylish **Group Size** counter UI (from 1 to 50 members) for the SendiYou category.
+  - Rewrote backend matching logic (`sendiyou.js/accept`): Multiple users can now join a single SendiYou connection until the `group_size` limit is reached, gracefully pooling all participants into a shared order.
+  - Added dynamic indicators to `ServiceDetail.jsx` highlighting the group capacity.
+- **Group Members HUD & Chat Scrollability**:
+  - Restructured the DOM flexbox layout in `OrderDetail.jsx` to enforce a strictly bounded, scrollable chat window height (`520px` via `minHeight`/`h-max`), preventing infinite stretching.
+  - Injected a dynamic **👥 Group Members** badge in the chat header, visually mapping the participant count (e.g., `1/10 joined`) alongside stacked avatar pills for each joined member.
+- **Supabase Multi-user Migration**: Authored and deployed [migrate_sendiyou_group.sql](file:///c:/Users/HP/OneDrive/Desktop/copy_try/server/supabase/migrate_sendiyou_group.sql) to execute the DDL schema additions for group scale.
+
+---
+
+*Last updated: May 23, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
