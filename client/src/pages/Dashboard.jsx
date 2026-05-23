@@ -4,7 +4,7 @@ import {
   Plus, ChevronRight, Star, TrendingUp, ShoppingBag,
   MessageCircle, Clock, Loader, LogIn, ArrowUpRight,
   ArrowDownRight, IndianRupee, Package, Zap, BarChart2,
-  Pencil, Trash2, AlertTriangle
+  Pencil, Trash2, AlertTriangle, AlertCircle
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
@@ -131,6 +131,7 @@ export default function Dashboard() {
   };
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('orders');
+  const [myPayouts, setMyPayouts] = useState([]);
   const today = new Date();
 
   useEffect(() => {
@@ -152,6 +153,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+    // Fetch own payout history (non-blocking)
+    try {
+      const payRes = await api.get('/payouts/my');
+      setMyPayouts(payRes.data.payouts || []);
+    } catch { /* ignore */ }
   };
 
   if (!user) {
@@ -260,6 +266,18 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* UPI Warning Banner — shown to sellers who haven't set a UPI ID */}
+        {!user.upiId && (user.role === 'seller' || user.role === 'both') && (
+          <div className="mb-5 flex items-start gap-3 px-4 py-3.5 rounded-xl border"
+            style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
+            <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-700">
+              <span className="font-semibold">⚠️ Add your UPI ID</span> to receive payments for completed orders.{' '}
+              <Link to="/profile" className="font-bold underline hover:no-underline">Go to Profile → About tab</Link>
+            </p>
+          </div>
+        )}
+
         {/* ── Row 1: Stat Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {statsCards.map((s, i) => (
@@ -364,6 +382,11 @@ export default function Dashboard() {
                       const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
                       const sellerName = typeof order.seller === 'object' ? order.seller?.name : 'Seller';
                       const d = new Date(order.createdAt);
+                      const sellerId = typeof order.seller === 'object' ? order.seller?._id : order.seller;
+                      const iAmSeller = sellerId === user._id;
+                      const payout = iAmSeller && order.status === 'completed'
+                        ? myPayouts.find(p => p.order_id === order._id)
+                        : null;
                       return (
                         <div key={order._id || i}
                           className="grid grid-cols-3 md:grid-cols-4 gap-2 items-center py-3.5 cursor-pointer hover:bg-stripe-bg rounded-xl px-2 -mx-2 transition-colors"
@@ -392,6 +415,15 @@ export default function Dashboard() {
                               style={{ color: st.color, background: st.bg }}>
                               ₹{(order.price || 0).toLocaleString('en-IN')}
                             </span>
+                            {/* Payout status badge for sellers */}
+                            {payout && (
+                              <div className="mt-1">
+                                {payout.status === 'paid'
+                                  ? <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-emerald-700 bg-emerald-50">💸 Paid ✓</span>
+                                  : <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-amber-700 bg-amber-50">⏳ Processing</span>
+                                }
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

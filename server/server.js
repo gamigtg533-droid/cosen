@@ -71,6 +71,8 @@ app.use('/api/upload',        require('./routes/upload'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/sendiyou',      require('./routes/sendiyou'));
 app.use('/api/admin',         require('./routes/admin'));
+app.use('/api/payouts',       require('./routes/payouts'));
+
 
 
 // ── 404 handler ─────────────────────────────────────────────

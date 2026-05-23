@@ -66,7 +66,7 @@ export default function Profile() {
   // Form state mirrors profile
   const [form, setForm] = useState({
     name: '', department: '', yearOfStudy: '', bio: '', phone: '', skills: [],
-    instagramUrl: '', facebookUrl: '', youtubeUrl: '', xUrl: '',
+    instagramUrl: '', facebookUrl: '', youtubeUrl: '', xUrl: '', upiId: '',
   });
 
   /* ── Load data ─────────────────────────────────────────── */
@@ -94,6 +94,7 @@ export default function Profile() {
           facebookUrl:  p.facebookUrl  || '',
           youtubeUrl:   p.youtubeUrl   || '',
           xUrl:         p.xUrl         || '',
+          upiId:        p.upiId        || '',
         });
       } catch {
         showToast('error', 'Failed to load profile.');
@@ -174,6 +175,7 @@ export default function Profile() {
         skills:      form.skills,
         avatarUrl,
         bannerUrl,
+        upiId:        form.upiId,
         instagramUrl: form.instagramUrl,
         facebookUrl:  form.facebookUrl,
         youtubeUrl:   form.youtubeUrl,
@@ -210,6 +212,7 @@ export default function Profile() {
       facebookUrl:  profile?.facebookUrl  || '',
       youtubeUrl:   profile?.youtubeUrl   || '',
       xUrl:         profile?.xUrl         || '',
+      upiId:        profile?.upiId        || '',
     });
   };
 
@@ -525,6 +528,55 @@ export default function Profile() {
                     profile?.phone
                       ? <div className="flex items-center gap-2 text-sm"><Phone className="h-4 w-4 text-stripe-muted" /><span className="font-medium text-stripe-slate">{profile.phone}</span></div>
                       : <p className="text-stripe-muted text-sm">No phone added. Add your WhatsApp number to enable direct chat on orders.</p>
+                  )}
+                </div>
+
+                {/* UPI / Payment Details */}
+                <div className="rounded-xl border p-5" style={{ borderColor: '#E6EBF1' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-stripe-slate flex items-center gap-2">
+                      <svg className="h-4 w-4 text-stripe-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                      </svg>
+                      Payment Details
+                    </h3>
+                    {profile?.upiId && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="h-3 w-3" /> UPI Set
+                      </span>
+                    )}
+                  </div>
+                  {editing ? (
+                    <div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stripe-muted text-xs font-bold">₹</span>
+                        <input
+                          type="text"
+                          className="stripe-input pl-7"
+                          placeholder="e.g. name@paytm or 9876543210@upi"
+                          value={form.upiId}
+                          onChange={e => setForm(f => ({ ...f, upiId: e.target.value.trim() }))}
+                        />
+                      </div>
+                      <p className="text-xs text-stripe-muted mt-1.5 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        Required to receive payments for completed orders. Admin will transfer via UPI.
+                      </p>
+                    </div>
+                  ) : (
+                    profile?.upiId
+                      ? <div className="flex items-center gap-2 text-sm">
+                          <span className="font-bold text-stripe-purple">₹</span>
+                          <span className="font-mono font-semibold text-stripe-slate">{profile.upiId}</span>
+                        </div>
+                      : <div className="flex items-start gap-2 text-sm">
+                          <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                          <p className="text-stripe-muted">
+                            No UPI ID added.{' '}
+                            <button onClick={() => setEditing(true)} className="text-stripe-purple hover:underline font-medium">Add it in Edit Profile</button>
+                            {' '}to receive payments when orders are completed.
+                          </p>
+                        </div>
                   )}
                 </div>
 

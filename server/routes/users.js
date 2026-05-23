@@ -21,6 +21,7 @@ const mapUser = (u) => u ? {
   isEmailVerified: u.is_email_verified,
   phone: u.phone || null,
   isPhoneVerified: u.is_phone_verified || false,
+  upiId: u.upi_id || null,
   createdAt: u.created_at,
   dob: u.dob,
   idCardImageUrl: u.id_card_image_url,
@@ -37,7 +38,7 @@ router.get('/me', protect, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, gender, rating, review_count, is_email_verified, phone, is_phone_verified, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
+      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, gender, rating, review_count, is_email_verified, phone, is_phone_verified, upi_id, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
       .eq('id', req.user._id)
       .single();
 
@@ -62,6 +63,7 @@ router.put('/me', protect, async (req, res) => {
       gender: 'gender',
       bannerUrl: 'banner_url',
       avatarUrl: 'avatar_url',
+      upiId: 'upi_id',
       instagramUrl: 'instagram_url',
       facebookUrl:  'facebook_url',
       youtubeUrl:   'youtube_url',
@@ -81,7 +83,7 @@ router.put('/me', protect, async (req, res) => {
       .from('users')
       .update(updates)
       .eq('id', req.user._id)
-      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, gender, rating, review_count, is_email_verified, phone, is_phone_verified, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
+      .select('id, name, email, avatar_url, avatar_public_id, banner_url, department, year_of_study, bio, skills, role, gender, rating, review_count, is_email_verified, phone, is_phone_verified, upi_id, created_at, dob, id_card_image_url, instagram_url, facebook_url, youtube_url, x_url, platform_agreement_accepted, is_onboarding_complete')
       .single();
 
     if (error) throw error;

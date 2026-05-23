@@ -2,10 +2,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, ShieldCheck, Gavel, Users, Package,
-  ChevronRight, LogOut, Menu, X, Bell
+  ChevronRight, LogOut, Menu, X, Bell, IndianRupee
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import adminApi from '../lib/adminApi';
+import api from '../lib/api';
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', badge: null },
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/admin/disputes', icon: Gavel, label: 'Disputes', badgeKey: 'openDisputes' },
   { to: '/admin/users', icon: Users, label: 'Users', badge: null },
   { to: '/admin/services', icon: Package, label: 'Services', badge: null },
+  { to: '/admin/payouts', icon: IndianRupee, label: 'Payouts', badgeKey: 'pendingPayouts' },
 ];
 
 export default function AdminLayout({ children }) {
@@ -24,7 +26,11 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     adminApi.getStats().then(res => {
       const s = res.data.stats;
-      setBadges({ pendingVerifications: s.pendingVerifications, openDisputes: s.openDisputes });
+      setBadges({ pendingVerifications: s.pendingVerifications, openDisputes: s.openDisputes, pendingPayouts: 0 });
+    }).catch(() => {});
+    // Also fetch pending payouts count
+    api.get('/payouts/pending').then(res => {
+      setBadges(prev => ({ ...prev, pendingPayouts: res.data.payouts?.length || 0 }));
     }).catch(() => {});
   }, []);
 
