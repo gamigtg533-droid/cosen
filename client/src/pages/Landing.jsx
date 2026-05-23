@@ -109,7 +109,7 @@ const MOCK_FEATURED = [
 const steps = [
   { number: '01', title: 'Sign up with your campus email', desc: 'Instant verification — only real students from your university. No outsiders, ever.' },
   { number: '02', title: 'Share what you need or offer', desc: 'Post a request, offer a skill, or send an anonymous connection. Every need has a match.' },
-  { number: '03', title: 'Connect, chat & transact safely', desc: 'Message your match directly. Pay via escrow — money releases only when you're satisfied.' },
+  { number: '03', title: 'Connect, chat & transact safely', desc: "Message your match directly. Pay via escrow \u2014 money releases only when you're satisfied." },
 ];
 
 const getInitials = (s) =>
