@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ChevronRight, CheckCircle, AlertCircle, Loader,
   User, BookOpen, GraduationCap, Code, Palette, UtensilsCrossed,
-  Camera, Music, ArrowLeft, Shield, Eye, EyeOff, Mail, Lock, UserCircle, Trophy,
+  Camera, Music, ArrowLeft, Shield, Eye, EyeOff, Mail, Lock, UserCircle, Trophy, Phone,
 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import useAuthStore from '../store/authStore';
@@ -60,7 +60,7 @@ export default function Signup() {
   const [step, setStep] = useState(1);
 
   /* ── Step 1 ── */
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
 
   /* ── Step 2 ── */
   const [profile, setProfile] = useState({ department: '', yearOfStudy: '', bio: '', gender: '' });
@@ -74,7 +74,7 @@ export default function Signup() {
   const [agreed,       setAgreed]       = useState(false);
   const [showPolicy,   setShowPolicy]   = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [fieldErrors,  setFieldErrors]  = useState({ name: '', email: '', password: '' });
+  const [fieldErrors,  setFieldErrors]  = useState({ name: '', email: '', phone: '', password: '' });
 
   const handleChange = (e) => {
     clearError();
@@ -97,6 +97,10 @@ export default function Signup() {
       else if (!value.includes('@')) err = 'Enter a valid email address.';
       else if (!EDU_REGEX.test(value)) err = 'Must be a university email ending in .edu or .ac.in';
     }
+    if (name === 'phone') {
+      if (!value.trim()) err = 'Phone number is required.';
+      else if (!/^\d{10}$/.test(value.replace(/\D/g, ''))) err = 'Enter a valid 10-digit phone number.';
+    }
     if (name === 'password') {
       if (!value) err = 'Password is required.';
       else if (value.length < 8) err = 'Password must be at least 8 characters.';
@@ -114,6 +118,8 @@ export default function Signup() {
                 : form.name.trim().length < 2 ? 'Name must be at least 2 characters.' : '',
       email:    !form.email.trim() ? 'Email is required.'
                 : !EDU_REGEX.test(form.email) ? 'Must be a university email (.edu or .ac.in)' : '',
+      phone:    !form.phone.trim() ? 'Phone number is required.'
+                : !/^\d{10}$/.test(form.phone.replace(/\D/g, '')) ? 'Enter a valid 10-digit phone number.' : '',
       password: !form.password ? 'Password is required.'
                 : form.password.length < 8 ? 'Password must be at least 8 characters.' : '',
     };
@@ -320,6 +326,27 @@ export default function Signup() {
                     {fieldErrors.email
                       ? <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4, color: '#EF4444', fontWeight: 500 }}><AlertCircle style={{ width: 12, height: 12, flexShrink: 0 }} /> {fieldErrors.email}</p>
                       : <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#94A3B8' }}>Must end in .edu or .ac.in</p>
+                    }
+                  </div>
+
+                  {/* Phone Number */}
+                  <div>
+                    <label htmlFor="signup-phone" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>Phone Number</label>
+                    <div style={{ position: 'relative' }}>
+                      <Phone style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, color: fieldErrors.phone ? '#EF4444' : '#94A3B8', pointerEvents: 'none' }} />
+                      <input
+                        id="signup-phone" type="tel" name="phone"
+                        placeholder="e.g. 9876543210"
+                        className="stripe-input"
+                        style={{ ...inputStyle('phone'), paddingLeft: '2.75rem', background: '#FAFBFF', fontSize: '0.95rem' }}
+                        value={form.phone}
+                        onChange={handleChange}
+                        onBlur={handleBlur1}
+                      />
+                    </div>
+                    {fieldErrors.phone
+                      ? <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4, color: '#EF4444', fontWeight: 500 }}><AlertCircle style={{ width: 12, height: 12, flexShrink: 0 }} /> {fieldErrors.phone}</p>
+                      : <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#94A3B8' }}>Please add your valid phone number because our team is verifying it later.</p>
                     }
                   </div>
 

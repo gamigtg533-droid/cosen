@@ -30,6 +30,8 @@ const buildUserPayload = (u) => ({
   rating: u.rating,
   reviewCount: u.review_count,
   isEmailVerified: u.is_email_verified,
+  phone: u.phone,
+  isPhoneVerified: u.is_phone_verified,
   dob: u.dob,
   gender: u.gender || null,
   idCardImageUrl: u.id_card_image_url,
@@ -62,10 +64,10 @@ const sendToken = (user, statusCode, res, message = 'Success') => {
 // ─────────────────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, department, yearOfStudy, bio, role, gender } = req.body;
+    const { name, email, password, department, yearOfStudy, bio, role, gender, phone } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ success: false, message: 'Name, email, password, and phone number are required' });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.(edu|ac\.in)$/.test(email)) {
@@ -112,6 +114,8 @@ router.post('/register', async (req, res) => {
         bio: bio || '',
         role: dbRole,
         gender: gender || null,
+        phone: phone.trim(),
+        is_phone_verified: false,
         is_email_verified: false,
         is_onboarding_complete: false,
         email_verification_token: hashedOtp,
