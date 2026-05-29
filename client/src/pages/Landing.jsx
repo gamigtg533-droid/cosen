@@ -20,6 +20,7 @@ const categories = [
   { name: 'Study Helper',     icon: BookOpen,        color: '#0EA878', count: 120, desc: 'Tutoring & exam prep' },
   { name: 'Tech & Coding',    icon: Code,            color: '#4F3EFF', count: 85,  desc: 'Websites, apps, scripts' },
   { name: 'Art & Design',     icon: Palette,         color: '#D63E82', count: 64,  desc: 'Logos, UI & illustrations' },
+  { name: 'SendiYou',         icon: Zap,             color: '#EC4899', count: 215, desc: 'Anonymous matches & connections' },
   { name: 'Food Friendship',  icon: UtensilsCrossed, color: '#FF6348', count: 56,  desc: 'Home-cooked meals & snacks' },
   { name: 'Photography',      icon: Camera,          color: '#00B2FF', count: 41,  desc: 'Portraits, events & camera rental' },
   { name: 'Playground',       icon: Trophy,          color: '#F59E0B', count: 32,  desc: 'Team matches & esports pool' },
@@ -28,12 +29,14 @@ const categories = [
 
 const catColor = {
   'Tech & Coding': '#635BFF', 'Art & Design': '#FF6B9D', 'Study Helper': '#00D4AA',
+  'SendiYou': '#EC4899',
   'Food Friendship': '#FF6348', 'Photography': '#00B2FF', 'Playground': '#F59E0B', 'Other Talents': '#A855F7',
 };
 const catBg = {
   'Tech & Coding':   'linear-gradient(135deg,#EEF0FF,#DDE0FF)',
   'Art & Design':    'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
   'Study Helper':    'linear-gradient(135deg,#E8FFF8,#C8FFF0)',
+  'SendiYou':        'linear-gradient(135deg,#FFF0F8,#FFE0F2)',
   'Food Friendship': 'linear-gradient(135deg,#FFF5F0,#FFE4D6)',
   'Photography':     'linear-gradient(135deg,#EAF8FF,#CBEFFF)',
   'Playground':      'linear-gradient(135deg,#FEF3C7,#FDE68A)',
