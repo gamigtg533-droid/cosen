@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 /* ── Avatar placeholder ─────────────────────────────────── */
 function AvatarPlaceholder({ name = '', size = 96 }) {
@@ -116,7 +117,7 @@ export default function SellerProfile() {
   /* ── Loading ────────────────────────────────────────────── */
   if (loading) return (
     <div className="min-h-screen bg-stripe-bg flex items-center justify-center pt-20">
-      <Loader className="h-6 w-6 text-stripe-purple animate-spin" />
+      <LottieLoader size={120} text="Loading profile..." />
     </div>
   );
 

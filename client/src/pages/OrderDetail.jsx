@@ -8,6 +8,7 @@ import {
 import useAuthStore from '../store/authStore';
 import useRazorpay from '../hooks/useRazorpay';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -392,7 +393,7 @@ export default function OrderDetail() {
   /* ── Loading / error states ─────────────────────────── */
   if (loading) return (
     <div className="min-h-screen bg-stripe-bg flex items-center justify-center pt-20">
-      <Loader className="h-6 w-6 text-stripe-purple animate-spin" />
+      <LottieLoader size={120} text="Loading order details..." />
     </div>
   );
   if (error || !order) return (

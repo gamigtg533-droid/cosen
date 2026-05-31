@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 const SKILL_SUGGESTIONS = [
   'React', 'Python', 'Node.js', 'Graphic Design', 'UI/UX',
@@ -234,7 +235,7 @@ export default function Profile() {
 
   if (loading) return (
     <div className="min-h-screen bg-stripe-bg flex items-center justify-center pt-16">
-      <Loader className="h-6 w-6 text-stripe-purple animate-spin" />
+      <LottieLoader size={120} text="Loading your profile..." />
     </div>
   );
 

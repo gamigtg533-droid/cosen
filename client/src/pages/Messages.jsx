@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 const SOCKET_URL =
   import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -239,7 +240,7 @@ export default function Messages() {
             <div className="flex-1 overflow-y-auto divide-y divide-stripe-border">
               {listLoading ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader className="h-5 w-5 animate-spin text-stripe-purple" />
+                  <LottieLoader size={80} text="Loading chats..." />
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -380,7 +381,7 @@ export default function Messages() {
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 bg-slate-50/50">
                   {msgLoading ? (
                     <div className="flex justify-center py-10">
-                      <Loader className="h-5 w-5 animate-spin text-stripe-purple" />
+                      <LottieLoader size={80} text="Loading messages..." />
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">

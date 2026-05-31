@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, Star, ChevronRight, Loader, X, BadgeCheck, ShoppingBag, Heart, Eye, EyeOff } from 'lucide-react';
+import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 // Fallback mock data (shown when API is unavailable)
 const MOCK = [
@@ -247,22 +249,7 @@ export default function Browse() {
         </div>
 
         {loading ? (
-          /* Skeleton loader */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="stripe-card overflow-hidden animate-pulse">
-                <div className="h-36 bg-stripe-border" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 bg-stripe-border rounded w-3/4" />
-                  <div className="h-3 bg-stripe-border rounded w-1/2" />
-                  <div className="flex justify-between pt-2">
-                    <div className="h-4 bg-stripe-border rounded w-16" />
-                    <div className="h-4 bg-stripe-border rounded w-12" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <LottieLoader size={120} text="Finding services..." />
         ) : services.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-16 h-16 rounded-2xl bg-stripe-bg flex items-center justify-center mx-auto mb-5">

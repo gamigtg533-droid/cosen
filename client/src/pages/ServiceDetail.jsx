@@ -4,6 +4,7 @@ import { Star, Clock, RefreshCw, Shield, ChevronRight, MessageCircle, Loader, Al
 import useRazorpay from '../hooks/useRazorpay';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 export default function ServiceDetail() {
   const { id } = useParams();
@@ -47,10 +48,7 @@ export default function ServiceDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white pt-20 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader className="h-8 w-8 animate-spin text-stripe-purple" />
-          <p className="text-stripe-muted text-sm">Loading service details…</p>
-        </div>
+        <LottieLoader size={120} text="Loading service details..." />
       </div>
     );
   }

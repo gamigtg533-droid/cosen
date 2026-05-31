@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieLoader from '../components/LottieLoader';
 
 const MOCK_ORDERS = [
   { _id: 'CS1092', service: { title: 'Python Tutoring & Debugging' }, seller: { name: 'Alex M.' }, price: 499, status: 'inProgress', createdAt: new Date() },
@@ -373,9 +374,7 @@ export default function Dashboard() {
                 </div>
 
                 {loading ? (
-                  <div className="flex items-center justify-center py-10 text-stripe-muted">
-                    <Loader className="h-5 w-5 animate-spin mr-2 text-stripe-purple" /> Loading...
-                  </div>
+                  <LottieLoader size={120} text="Loading transactions..." />
                 ) : (
                   <div className="divide-y" style={{ borderColor: '#F0F4F8' }}>
                     {orders.slice(0, 5).map((order, i) => {
