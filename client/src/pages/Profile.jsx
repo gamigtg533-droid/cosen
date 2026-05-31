@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieUrlRenderer from '../components/LottieUrlRenderer';
 import LottieLoader from '../components/LottieLoader';
 
 const SKILL_SUGGESTIONS = [
@@ -395,8 +396,14 @@ export default function Profile() {
                       className="group rounded-xl border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
                       style={{ borderColor: '#E6EBF1' }}>
                       <div className="aspect-[4/3] bg-stripe-bg relative overflow-hidden">
-                        {s.images?.[0]
-                          ? <img src={s.images[0]} alt={s.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        {(s.coverImageUrl || s.images?.[0])
+                          ? (s.coverImageUrl || s.images?.[0]).endsWith('.json') ? (
+                              <div className="w-full h-full flex items-center justify-center bg-slate-50 transition-transform duration-300 group-hover:scale-105 p-6">
+                                <LottieUrlRenderer url={s.coverImageUrl || s.images[0]} className="w-full h-full" />
+                              </div>
+                            ) : (
+                              <img src={s.coverImageUrl || s.images[0]} alt={s.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            )
                           : <div className="w-full h-full flex items-center justify-center"><BookOpen className="h-10 w-10 text-stripe-muted opacity-40" /></div>}
                         <div className="absolute top-3 right-3">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md shadow ${s.isActive !== false ? 'bg-emerald-500/90 text-white' : 'bg-gray-500/80 text-white'}`}>

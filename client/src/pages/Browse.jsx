@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal, Star, ChevronRight, Loader, X, BadgeCheck, S
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
 import LottieLoader from '../components/LottieLoader';
+import LottieUrlRenderer from '../components/LottieUrlRenderer';
 
 // Fallback mock data (shown when API is unavailable)
 const MOCK = [
@@ -303,11 +304,17 @@ export default function Browse() {
                         <span className="text-[10px] uppercase font-bold text-pink-700 tracking-wider">Incognito Match</span>
                       </div>
                     ) : hasCover ? (
-                      <img
-                        src={s.coverImageUrl}
-                        alt={s.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+                      s.coverImageUrl.endsWith('.json') ? (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50 transition-transform duration-500 group-hover:scale-105 p-6">
+                          <LottieUrlRenderer url={s.coverImageUrl} className="w-full h-full" />
+                        </div>
+                      ) : (
+                        <img
+                          src={s.coverImageUrl}
+                          alt={s.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      )
                     ) : hasAvatar ? (
                       <img
                         src={s.seller.avatar.url}

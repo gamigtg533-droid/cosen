@@ -20,6 +20,20 @@ const useAuthStore = create((set, get) => ({
   loading: false,
   error:   null,
 
+  // ── Check User ─────────────────────────────────────────
+  checkUser: async (email, phone) => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await api.post('/auth/check-user', { email, phone });
+      set({ loading: false });
+      return { success: true, emailTaken: data.emailTaken, phoneTaken: data.phoneTaken };
+    } catch (err) {
+      set({ loading: false });
+      // If it fails, we still allow proceeding so the actual register catches it, or return error
+      return { success: false };
+    }
+  },
+
   // ── Register ───────────────────────────────────────────
   register: async (formData) => {
     set({ loading: true, error: null });

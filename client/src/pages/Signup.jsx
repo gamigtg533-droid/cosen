@@ -55,7 +55,7 @@ const STEPS = ['Account', 'Your Profile', 'Interests'];
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { register, loading, error, clearError } = useAuthStore();
+  const { register, checkUser, loading, error, clearError } = useAuthStore();
 
   const [step, setStep] = useState(1);
 
@@ -127,8 +127,19 @@ export default function Signup() {
     return Object.values(errors).some(Boolean);
   };
 
-  const nextStep = () => {
-    if (step === 1 && validateStep1()) return;
+  const nextStep = async () => {
+    if (step === 1) {
+      if (validateStep1()) return;
+      
+      const res = await checkUser(form.email, null);
+      if (res.success) {
+        if (res.emailTaken) {
+          setFieldErrors(f => ({ ...f, email: 'An account with this email already exists.' }));
+          return;
+        }
+      }
+    }
+
     if (step === 2) {
       if (!profile.department) {
         setLocalError('Please select your department.');

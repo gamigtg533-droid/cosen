@@ -7,6 +7,19 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieUrlRenderer from '../components/LottieUrlRenderer';
+
+const SENDIYOU_LOTTIES = [
+  '/sendiyou_lottie/108f4fb6-1181-11ee-b065-4fd3e1c5a442.json',
+  '/sendiyou_lottie/3b769c46-d4b5-11ee-9229-afbfa1f82773.json',
+  '/sendiyou_lottie/5a40df34-117d-11ee-a1af-5fe2367006a3.json',
+  '/sendiyou_lottie/9b7c7972-1187-11ee-96bf-af3ccc7d6968.json',
+  '/sendiyou_lottie/a09ad288-1177-11ee-be96-53b4df923e7f.json',
+  '/sendiyou_lottie/bf8f2232-1179-11ee-8f33-db8fe91f3c3c.json',
+  '/sendiyou_lottie/c635fef8-d248-11ef-8418-db17c1b97f7f.json',
+  '/sendiyou_lottie/ca9bbdae-1186-11ee-b5ca-b3d847f28449.json',
+  '/sendiyou_lottie/cc26d92c-116a-11ee-9b51-1fe8e93a38e8.json',
+];
 
 const CATEGORIES = [
   { value: 'Study Helper', label: 'Study Helper', icon: BookOpen, color: '#00D4AA' },
@@ -977,58 +990,93 @@ export default function PostService() {
           )}
 
 
-          {/* ── Cover Image Upload ── */}
-          <div className="stripe-card bg-white p-6">
-            <label className="form-label flex items-center gap-2 mb-3">
-              <Camera className="h-4 w-4 text-stripe-purple" />
-              <span>Cover Image <span className="text-stripe-muted font-normal">(recommended)</span></span>
-            </label>
-            <p className="text-xs text-stripe-muted mb-4">
-              Upload an eye-catching image for your service card. This is the first thing buyers see.
-            </p>
-            <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-8 cursor-pointer transition-all hover:border-stripe-purple"
-              style={{ borderColor: form.coverImageUrl ? '#00D4AA' : '#E6EBF1' }}>
-              {uploadingCover ? (
-                <Loader className="h-8 w-8 animate-spin text-stripe-purple" />
-              ) : form.coverImageUrl ? (
-                <img src={form.coverImageUrl} alt="Cover preview"
-                  className="w-full max-h-48 object-cover rounded-xl" />
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-2xl bg-stripe-purple/10 flex items-center justify-center">
-                    <ImageIcon className="h-7 w-7 text-stripe-purple" />
+          {/* ── Cover Image Upload or Lottie Selector ── */}
+          {form.category === 'SendiYou' ? (
+            <div className="stripe-card bg-white p-6">
+              <label className="form-label flex items-center gap-2 mb-3">
+                <Heart className="h-4 w-4 text-pink-500" />
+                <span>Select Animation <span className="text-red-500">*</span></span>
+              </label>
+              <p className="text-xs text-stripe-muted mb-4">
+                Choose an animation to represent your anonymous message.
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                {SENDIYOU_LOTTIES.map((url, idx) => {
+                  const isSelected = form.coverImageUrl === url;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, coverImageUrl: url }))}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                        isSelected ? 'border-pink-500 scale-[1.02] shadow-md' : 'border-stripe-border hover:border-pink-300'
+                      }`}
+                      style={{ background: isSelected ? '#FFF5F8' : '#F8FAFC' }}
+                    >
+                      <LottieUrlRenderer url={url} className="w-full h-full object-cover p-2" />
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 bg-pink-500 text-white rounded-full p-0.5 shadow-sm">
+                          <CheckCircle className="h-3 w-3" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="stripe-card bg-white p-6">
+              <label className="form-label flex items-center gap-2 mb-3">
+                <Camera className="h-4 w-4 text-stripe-purple" />
+                <span>Cover Image <span className="text-stripe-muted font-normal">(recommended)</span></span>
+              </label>
+              <p className="text-xs text-stripe-muted mb-4">
+                Upload an eye-catching image for your service card. This is the first thing buyers see.
+              </p>
+              <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-8 cursor-pointer transition-all hover:border-stripe-purple"
+                style={{ borderColor: form.coverImageUrl ? '#00D4AA' : '#E6EBF1' }}>
+                {uploadingCover ? (
+                  <Loader className="h-8 w-8 animate-spin text-stripe-purple" />
+                ) : form.coverImageUrl ? (
+                  <img src={form.coverImageUrl} alt="Cover preview"
+                    className="w-full max-h-48 object-cover rounded-xl" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 rounded-2xl bg-stripe-purple/10 flex items-center justify-center">
+                      <ImageIcon className="h-7 w-7 text-stripe-purple" />
+                    </div>
+                    <span className="text-sm font-semibold text-stripe-muted">Click to upload cover image</span>
+                    <span className="text-xs text-stripe-muted">JPG, PNG up to 5MB</span>
                   </div>
-                  <span className="text-sm font-semibold text-stripe-muted">Click to upload cover image</span>
-                  <span className="text-xs text-stripe-muted">JPG, PNG up to 5MB</span>
-                </div>
-              )}
+                )}
+                {form.coverImageUrl && (
+                  <span className="text-sm font-semibold" style={{ color: '#00D4AA' }}>
+                    Image uploaded ✓ — click to replace
+                  </span>
+                )}
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    setUploadingCover(true);
+                    try {
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      const res = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                      setForm(f => ({ ...f, coverImageUrl: res.data.url }));
+                    } catch {
+                      setApiError('Failed to upload image. Please try again.');
+                    } finally {
+                      setUploadingCover(false);
+                    }
+                  }} disabled={uploadingCover} />
+              </label>
               {form.coverImageUrl && (
-                <span className="text-sm font-semibold" style={{ color: '#00D4AA' }}>
-                  Image uploaded ✓ — click to replace
-                </span>
+                <button type="button" onClick={() => setForm(f => ({ ...f, coverImageUrl: '' }))}
+                  className="mt-2 text-xs text-red-500 font-medium hover:underline">Remove image</button>
               )}
-              <input type="file" accept="image/*" className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  setUploadingCover(true);
-                  try {
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    const res = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-                    setForm(f => ({ ...f, coverImageUrl: res.data.url }));
-                  } catch {
-                    setApiError('Failed to upload image. Please try again.');
-                  } finally {
-                    setUploadingCover(false);
-                  }
-                }} disabled={uploadingCover} />
-            </label>
-            {form.coverImageUrl && (
-              <button type="button" onClick={() => setForm(f => ({ ...f, coverImageUrl: '' }))}
-                className="mt-2 text-xs text-red-500 font-medium hover:underline">Remove image</button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* ── Title ── */}
           <div className="stripe-card bg-white p-6">
@@ -1241,8 +1289,14 @@ export default function PostService() {
                 }}
               >
                 {form.coverImageUrl && (
-                  <img src={form.coverImageUrl} alt="Cover"
-                    className="w-full h-40 object-cover rounded-xl mb-4" />
+                  form.coverImageUrl.endsWith('.json') ? (
+                    <div className="w-full max-h-48 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 p-4">
+                      <LottieUrlRenderer url={form.coverImageUrl} className="w-32 h-32" />
+                    </div>
+                  ) : (
+                    <img src={form.coverImageUrl} alt="Cover"
+                      className="w-full max-h-48 object-cover rounded-xl" />
+                  )
                 )}
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-bold px-3 py-1 rounded-full"

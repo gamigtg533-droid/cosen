@@ -60,6 +60,31 @@ const sendToken = (user, statusCode, res, message = 'Success') => {
 };
 
 // ─────────────────────────────────────────────────────────────
+// POST /api/auth/check-user
+// ─────────────────────────────────────────────────────────────
+router.post('/check-user', async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+    let emailTaken = false;
+    let phoneTaken = false;
+
+    if (email) {
+      const { data } = await supabase.from('users').select('id').eq('email', email.toLowerCase()).maybeSingle();
+      if (data) emailTaken = true;
+    }
+    if (phone) {
+      const { data } = await supabase.from('users').select('id').eq('phone', phone).maybeSingle();
+      if (data) phoneTaken = true;
+    }
+
+    return res.status(200).json({ success: true, emailTaken, phoneTaken });
+  } catch (error) {
+    console.error('Check user error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // POST /api/auth/register
 // ─────────────────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
