@@ -4,6 +4,7 @@ import { Star, Clock, RefreshCw, Shield, ChevronRight, MessageCircle, Loader, Al
 import useRazorpay from '../hooks/useRazorpay';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
+import LottieUrlRenderer from '../components/LottieUrlRenderer';
 import LottieLoader from '../components/LottieLoader';
 
 export default function ServiceDetail() {
@@ -288,9 +289,15 @@ export default function ServiceDetail() {
 
               {/* Seller avatar (clickable unless identity hidden) */}
               {isSendiYou && service.identityHidden ? (
-                <div className="w-24 h-24 rounded-3xl bg-pink-100 border border-pink-200 flex items-center justify-center text-pink-500 shadow-stripe-card ring-4 ring-white/60">
-                  <EyeOff className="h-10 w-10" />
-                </div>
+                service.coverImageUrl && service.coverImageUrl.endsWith('.json') ? (
+                  <div className="w-24 h-24 rounded-3xl bg-white border border-pink-200 flex items-center justify-center shadow-stripe-card ring-4 ring-white/60 overflow-hidden p-2">
+                    <LottieUrlRenderer url={service.coverImageUrl} className="w-full h-full" />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-3xl bg-pink-100 border border-pink-200 flex items-center justify-center text-pink-500 shadow-stripe-card ring-4 ring-white/60">
+                    <EyeOff className="h-10 w-10" />
+                  </div>
+                )
               ) : (
                 <Link to={`/profile/${sellerId}`} className="group" title={`View ${service.seller?.name}'s profile`}>
                   {sellerAvatar ? (

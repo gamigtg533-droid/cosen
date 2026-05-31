@@ -297,12 +297,18 @@ export default function Browse() {
                   <div className="relative rounded-xl overflow-hidden"
                     style={{ aspectRatio: '4/3' }}>
                     {s.category === 'SendiYou' && s.identityHidden ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-pink-400/20 to-rose-400/30">
-                        <div className="w-16 h-16 rounded-3xl bg-pink-500 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 animate-pulse">
-                          <Heart className="h-8 w-8 fill-white" />
+                      hasCover && s.coverImageUrl.endsWith('.json') ? (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50 transition-transform duration-500 group-hover:scale-105 p-6">
+                          <LottieUrlRenderer url={s.coverImageUrl} className="w-full h-full" />
                         </div>
-                        <span className="text-[10px] uppercase font-bold text-pink-700 tracking-wider">Incognito Match</span>
-                      </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-pink-400/20 to-rose-400/30">
+                          <div className="w-16 h-16 rounded-3xl bg-pink-500 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 animate-pulse">
+                            <Heart className="h-8 w-8 fill-white" />
+                          </div>
+                          <span className="text-[10px] uppercase font-bold text-pink-700 tracking-wider">Incognito Match</span>
+                        </div>
+                      )
                     ) : hasCover ? (
                       s.coverImageUrl.endsWith('.json') ? (
                         <div className="w-full h-full flex items-center justify-center bg-slate-50 transition-transform duration-500 group-hover:scale-105 p-6">
