@@ -27,6 +27,7 @@ const categories = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [hiddenOnScroll, setHiddenOnScroll] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -153,12 +154,36 @@ export default function Navbar() {
     : navLinks;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
+    let lastScrollY = window.scrollY;
+    
+    const onScroll = () => {
+      const currentScrollY = window.scrollY;
+      setScrolled(currentScrollY > 20);
+      
+      // Hide navbar when scrolling down on Browse page
+      if (location.pathname === '/browse') {
+        if (currentScrollY > lastScrollY && currentScrollY > 80) {
+          setHiddenOnScroll(true);
+        } else if (currentScrollY < lastScrollY) {
+          setHiddenOnScroll(false);
+        }
+      } else {
+        setHiddenOnScroll(false);
+      }
+      lastScrollY = currentScrollY;
+    };
+    
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [location.pathname]);
 
-  useEffect(() => { setMobileOpen(false); setCategoriesOpen(false); setUserMenuOpen(false); setBellOpen(false); }, [location]);
+  useEffect(() => { 
+    setMobileOpen(false); 
+    setCategoriesOpen(false); 
+    setUserMenuOpen(false); 
+    setBellOpen(false); 
+    if (location.pathname !== '/browse') setHiddenOnScroll(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -195,6 +220,7 @@ export default function Navbar() {
         id="main-navbar"
         className="fixed w-full z-50 transition-all duration-500"
         style={{
+          transform: hiddenOnScroll ? 'translateY(-100%)' : 'translateY(0)',
           backgroundColor: isOnHero ? 'transparent' : (scrolled ? 'rgba(255,255,255,0.94)' : '#ffffff'),
           backdropFilter: isOnHero ? 'none' : (scrolled ? 'blur(18px)' : 'none'),
           WebkitBackdropFilter: isOnHero ? 'none' : (scrolled ? 'blur(18px)' : 'none'),
@@ -699,7 +725,13 @@ export default function Navbar() {
 
       {/* ── Mobile Bottom Navigation Bar (md:hidden) ── */}
       {user && !['/login', '/signup', '/forgot-password', '/reset-password'].includes(location.pathname) && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.06)]" style={{ borderColor: '#E6EBF1' }}>
+        <div 
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.06)] transition-transform duration-500" 
+          style={{ 
+            borderColor: '#E6EBF1',
+            transform: hiddenOnScroll ? 'translateY(100%)' : 'translateY(0)'
+          }}
+        >
           <div className="flex items-center justify-around h-16 px-2">
 
             {/* Browse */}
