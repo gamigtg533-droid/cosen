@@ -298,7 +298,7 @@ export default function Browse() {
                     style={{ aspectRatio: '4/3' }}>
                     {s.category === 'SendiYou' && s.identityHidden ? (
                       hasCover && s.coverImageUrl.endsWith('.json') ? (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-50 transition-transform duration-500 group-hover:scale-105 p-6">
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50/50 transition-transform duration-500 group-hover:scale-105 p-6">
                           <LottieUrlRenderer url={s.coverImageUrl} className="w-full h-full" />
                         </div>
                       ) : (
@@ -311,7 +311,7 @@ export default function Browse() {
                       )
                     ) : hasCover ? (
                       s.coverImageUrl.endsWith('.json') ? (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-50 transition-transform duration-500 group-hover:scale-105 p-6">
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50/50 transition-transform duration-500 group-hover:scale-105 p-6">
                           <LottieUrlRenderer url={s.coverImageUrl} className="w-full h-full" />
                         </div>
                       ) : (
@@ -372,7 +372,7 @@ export default function Browse() {
                           🏟️ Campus Ground Booked
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50/50 px-2.5 py-1 rounded-md border border-slate-200">
                           🏟️ Booking Pending
                         </span>
                       )}
@@ -385,7 +385,7 @@ export default function Browse() {
                         💌 Preferred: {s.preferredGender || 'Any'}
                       </span>
                       {s.identityHidden ? (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-500 bg-slate-50/50 px-2 py-0.5 rounded border border-slate-200">
                           🔒 Incognito
                         </span>
                       ) : (

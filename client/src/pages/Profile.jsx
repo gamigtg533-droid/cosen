@@ -64,6 +64,7 @@ export default function Profile() {
   const [bannerPrev,setBannerPrev]= useState(null);
   const [bannerFile,setBannerFile]= useState(null);
   const [activeTab, setActiveTab] = useState('services');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Form state mirrors profile
   const [form, setForm] = useState({
@@ -246,7 +247,7 @@ export default function Profile() {
   const memberSince   = profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—';
 
   return (
-    <div className="min-h-screen pt-16 pb-16" style={{ background: '#F6F9FC' }}>
+    <div className="min-h-screen pt-16 pb-16 bg-stripe-bg">
 
       {/* Toast */}
       {toast && (
@@ -346,7 +347,7 @@ export default function Profile() {
                   </>) : (<>
                     <button onClick={() => setEditing(true)} className="btn-primary py-2.5 px-6 text-sm flex items-center gap-2"><Edit3 className="h-4 w-4" /> Edit Profile</button>
                     <Link to="/messages" className="btn-outline py-2.5 px-5 text-sm flex items-center gap-2"><MessageCircle className="h-4 w-4" /> Messages</Link>
-                    <Link to="/dashboard" className="btn-ghost py-2.5 px-4 text-sm flex items-center gap-2"><Settings className="h-4 w-4" /></Link>
+                    <button onClick={() => setSettingsOpen(true)} className="btn-ghost py-2.5 px-4 text-sm flex items-center gap-2" title="Settings"><Settings className="h-4 w-4" /></button>
                   </>)}
                 </div>
               </div>
@@ -356,7 +357,7 @@ export default function Profile() {
 
         {/* ══ INSTAGRAM-STYLE TABS ══ */}
         <div className="bg-white rounded-2xl shadow-sm border mb-6" style={{ borderColor: '#E6EBF1' }}>
-          <div className="flex border-b" style={{ borderColor: '#E6EBF1' }}>
+          <div className="flex border-b" style={{ borderColor: 'var(--stripe-border, #E6EBF1)' }}>
             {[
               { id: 'services', label: 'Services', icon: Grid3X3 },
               { id: 'skills', label: 'Skills', icon: Sparkles },
@@ -393,8 +394,8 @@ export default function Profile() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {services.map(s => (
                     <Link key={s._id} to={`/services/${s._id}`}
-                      className="group rounded-xl border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
-                      style={{ borderColor: '#E6EBF1' }}>
+                      className="group rounded-xl border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all bg-white"
+                      style={{ borderColor: 'var(--stripe-border, #E6EBF1)' }}>
                       <div className="aspect-[4/3] bg-stripe-bg relative overflow-hidden">
                         {(s.coverImageUrl || s.images?.[0])
                           ? (s.coverImageUrl || s.images?.[0]).endsWith('.json') ? (
@@ -683,6 +684,68 @@ export default function Profile() {
             className="hover:text-red-500 transition-colors">Logout</button>
         </div>
 
+      </div>
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} user={profile} />
+    </div>
+  );
+}
+
+function SettingsModal({ open, onClose, user }) {
+  if (!open) return null;
+  const rank = user?.rank || 'bronze';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ margin: 0 }}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center p-5 border-b" style={{ borderColor: '#E6EBF1' }}>
+          <h2 className="text-xl font-bold text-stripe-slate flex items-center gap-2">
+            <Settings className="h-5 w-5 text-stripe-purple" /> Profile Settings
+          </h2>
+          <button onClick={onClose} className="p-2 text-stripe-muted hover:bg-gray-100 rounded-full transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="flex border-b" style={{ borderColor: '#E6EBF1' }}>
+          <button className="flex-1 py-3 text-sm font-semibold border-b-2 transition-colors border-stripe-purple text-stripe-purple">
+            Ranking System
+          </button>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-6">
+            <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <p className="text-sm font-semibold text-stripe-purple mb-1">Your Current Rank</p>
+              <div className="text-2xl font-black text-stripe-slate uppercase tracking-wider">{rank}</div>
+            </div>
+
+            <div className="space-y-4">
+              <div className={`p-4 rounded-xl border ${rank === 'bronze' ? 'border-amber-700/50 bg-amber-50' : 'border-gray-200'}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-bold text-amber-700">Bronze</h3>
+                  <span className="text-xs font-semibold bg-black/5 px-2 py-0.5 rounded-full">New Users</span>
+                </div>
+                <p className="text-sm text-stripe-muted">Default rank. You pay a <strong>10% platform fee</strong> per service.</p>
+              </div>
+
+              <div className={`p-4 rounded-xl border ${rank === 'silver' ? 'border-slate-400 bg-slate-50' : 'border-gray-200'}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-bold text-slate-500">Silver</h3>
+                  <span className="text-xs font-semibold bg-black/5 px-2 py-0.5 rounded-full">100 Orders</span>
+                </div>
+                <p className="text-sm text-stripe-muted">Achieved after completing 100 valid orders. Platform fee reduced to <strong>6%</strong>.</p>
+              </div>
+
+              <div className={`p-4 rounded-xl border ${rank === 'gold' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200'}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-bold text-yellow-600">Gold</h3>
+                  <span className="text-xs font-semibold bg-black/5 px-2 py-0.5 rounded-full">200 Orders</span>
+                </div>
+                <p className="text-sm text-stripe-muted">Achieved after completing 200 valid orders. Platform fee reduced to just <strong>3%</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

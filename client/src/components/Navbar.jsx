@@ -218,14 +218,13 @@ export default function Navbar() {
     <>
       <nav
         id="main-navbar"
-        className="fixed w-full z-50 transition-all duration-500"
+        className={`fixed w-full z-50 transition-all duration-500 ${
+          isOnHero 
+            ? 'bg-transparent border-b border-white/10' 
+            : (scrolled ? 'nav-scrolled' : 'nav-default')
+        }`}
         style={{
           transform: hiddenOnScroll ? 'translateY(-100%)' : 'translateY(0)',
-          backgroundColor: isOnHero ? 'transparent' : (scrolled ? 'rgba(255,255,255,0.94)' : '#ffffff'),
-          backdropFilter: isOnHero ? 'none' : (scrolled ? 'blur(18px)' : 'none'),
-          WebkitBackdropFilter: isOnHero ? 'none' : (scrolled ? 'blur(18px)' : 'none'),
-          borderBottom: isOnHero ? '1px solid rgba(255,255,255,0.10)' : '1px solid #E6EBF1',
-          boxShadow: scrolled ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -362,8 +361,8 @@ export default function Navbar() {
                     </button>
                     {bellOpen && (
                       <div
-                        className="absolute top-full right-0 mt-2 rounded-2xl overflow-hidden"
-                        style={{ width: '340px', background: '#fff', border: '1px solid #E6EBF1', boxShadow: '0 20px 40px -8px rgba(50,50,93,0.18)', zIndex: 60 }}
+                        className="absolute top-full right-0 mt-2 rounded-2xl overflow-hidden bg-white shadow-[0_20px_40px_-8px_rgba(50,50,93,0.18)] dark:shadow-[0_20px_40px_-8px_rgba(0,0,0,0.5)] border border-stripe-border"
+                        style={{ width: '340px', zIndex: 60 }}
                       >
                         <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#E6EBF1' }}>
                           <span className="font-bold text-stripe-slate text-sm">Notifications</span>
@@ -391,8 +390,8 @@ export default function Navbar() {
                                   key={n.id}
                                   to={n.link || undefined}
                                   onClick={() => handleNotifClick(n)}
-                                  className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-stripe-bg"
-                                  style={{ background: n.is_read ? '#fff' : '#635BFF08', textDecoration: 'none' }}
+                                  className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-stripe-bg ${n.is_read ? 'bg-white' : 'bg-[#635BFF08]'}`}
+                                  style={{ textDecoration: 'none' }}
                                 >
                                   <span className="text-lg shrink-0 mt-0.5">{notifIcon(n.type)}</span>
                                   <div className="flex-1 min-w-0">
@@ -448,8 +447,7 @@ export default function Navbar() {
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-52 rounded-xl overflow-hidden"
-                      style={{ background: '#fff', border: '1px solid #E6EBF1', boxShadow: '0 20px 40px -8px rgba(50,50,93,0.15)' }}>
+                    <div className="absolute top-full right-0 mt-2 w-52 rounded-xl overflow-hidden bg-white border border-stripe-border shadow-[0_20px_40px_-8px_rgba(50,50,93,0.15)] dark:shadow-[0_20px_40px_-8px_rgba(0,0,0,0.5)]">
                       {/* User info */}
                       <div className="px-4 py-3 border-b" style={{ borderColor: '#E6EBF1' }}>
                         <div className="text-sm font-semibold text-stripe-slate">{user.name}</div>
@@ -515,8 +513,7 @@ export default function Navbar() {
               id="nav-mobile-toggle"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
-              style={{ color: '#0A2540' }}
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors text-stripe-slate"
               onClick={() => setMobileOpen(prev => !prev)}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -534,11 +531,9 @@ export default function Navbar() {
       {/* ── Mobile Drawer ── */}
       <div
         id="nav-mobile-drawer"
-        className="fixed top-0 right-0 h-full z-50 md:hidden overflow-y-auto transition-transform duration-300 ease-in-out"
+        className="fixed top-0 right-0 h-full z-50 md:hidden overflow-y-auto transition-transform duration-300 ease-in-out bg-white shadow-[-8px_0_32px_rgba(10,37,64,0.15)] dark:shadow-[0_0_32px_rgba(0,0,0,0.5)]"
         style={{
           width: 'min(320px, 88vw)',
-          background: '#fff',
-          boxShadow: '-8px 0 32px rgba(10,37,64,0.15)',
           transform: mobileOpen ? 'translateX(0)' : 'translateX(100%)',
         }}
       >

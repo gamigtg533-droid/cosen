@@ -268,7 +268,7 @@ export default function Messages() {
                       w-full text-left p-4 flex items-start gap-3 transition-colors
                       ${c.id === activeId
                         ? 'bg-stripe-purple/5 border-l-2 border-stripe-purple'
-                        : 'hover:bg-slate-50 border-l-2 border-transparent'}
+                        : 'hover:bg-slate-50/50 border-l-2 border-transparent'}
                     `}
                   >
                     {/* Avatar with real photo */}
@@ -378,7 +378,7 @@ export default function Messages() {
                 </div>
 
                 {/* Messages area */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 bg-slate-50/50">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 bg-slate-50/50/50">
                   {msgLoading ? (
                     <div className="flex justify-center py-10">
                       <LottieLoader size={80} text="Loading messages..." />
@@ -419,17 +419,11 @@ export default function Messages() {
                               {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                             <div
-                              className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
-                              style={{
-                                background: isMine ? '#635BFF' : '#ffffff',
-                                color: isMine ? '#ffffff' : '#425466',
-                                border: isMine ? 'none' : '1px solid #E6EBF1',
-                                borderBottomRightRadius: isMine ? '4px' : '16px',
-                                borderBottomLeftRadius: !isMine ? '4px' : '16px',
-                                boxShadow: isMine
-                                  ? '0 2px 8px rgba(99,91,255,0.3)'
-                                  : '0 1px 4px rgba(0,0,0,0.06)',
-                              }}
+                              className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                                isMine
+                                  ? 'bg-stripe-purple text-white shadow-[0_2px_8px_rgba(99,91,255,0.3)] rounded-br-sm border-none'
+                                  : 'bg-white text-stripe-slate border border-stripe-border shadow-[0_1px_4px_rgba(0,0,0,0.06)] rounded-bl-sm'
+                              }`}
                             >
                               {m.content}
                             </div>

@@ -284,6 +284,12 @@ const mapOrder = (row, currentUserId = null) => {
   };
 };
 
+const getCommissionRate = (rank) => {
+  if (rank === 'gold') return 0.03;
+  if (rank === 'silver') return 0.06;
+  return 0.10;
+};
+
 // ─────────────────────────────────────────────────────────────
 // POST /api/orders — place a new order (protected)
 // ─────────────────────────────────────────────────────────────
@@ -293,7 +299,10 @@ router.post('/', protect, async (req, res) => {
 
     const { data: service, error: svcErr } = await supabase
       .from('services')
-      .select('id, seller_id, price, is_active, is_negotiable')
+      .select(`
+        id, seller_id, price, is_active, is_negotiable,
+        seller:users!seller_id(rank)
+      `)
       .eq('id', serviceId)
       .maybeSingle();
 
@@ -304,7 +313,9 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'You cannot order your own service' });
 
     const price = service.price;
-    const platformFee = Math.round(price * COMMISSION);
+    const sellerRank = (service.seller && service.seller.rank) ? service.seller.rank : 'bronze';
+    const commissionRate = getCommissionRate(sellerRank);
+    const platformFee = Math.round(price * commissionRate);
     const sellerEarnings = price - platformFee;
 
     const { data: order, error } = await supabase
@@ -367,7 +378,10 @@ router.put('/:id/set-price', protect, async (req, res) => {
 
     const { data: order, error: fetchErr } = await supabase
       .from('orders')
-      .select('id, seller_id, status, is_negotiable')
+      .select(`
+        id, seller_id, status, is_negotiable,
+        seller:users!seller_id(rank)
+      `)
       .eq('id', req.params.id)
       .maybeSingle();
 
@@ -377,7 +391,9 @@ router.put('/:id/set-price', protect, async (req, res) => {
     if (!order.is_negotiable) return res.status(400).json({ success: false, message: 'This order is not negotiable' });
 
     const newPrice = Number(price);
-    const platformFee = Math.round(newPrice * COMMISSION);
+    const sellerRank = (order.seller && order.seller.rank) ? order.seller.rank : 'bronze';
+    const commissionRate = getCommissionRate(sellerRank);
+    const platformFee = Math.round(newPrice * commissionRate);
     const sellerEarnings = newPrice - platformFee;
 
     const { data: updated, error } = await supabase
@@ -559,8 +575,8 @@ router.put('/:id/complete', protect, async (req, res) => {
       .from('orders')
       .select(`
         id, buyer_id, seller_id, status, price, seller_earnings,
-        service:services!service_id(title),
-        seller:users!seller_id(id, name, email, upi_id)
+        service:services!service_id(title, category),
+        seller:users!seller_id(id, name, email, upi_id, rank)
       `)
       .eq('id', req.params.id)
       .maybeSingle();
@@ -645,6 +661,66 @@ router.put('/:id/complete', protect, async (req, res) => {
     const mapped = mapOrder(updated, req.user._id);
     if (mapped) {
       mapped.payout = payout;
+    }
+
+    // ── Rank Progression Check (non-blocking) ──────────────
+    if (order.service?.category !== 'SendiYou') {
+      (async () => {
+        try {
+          const { data: completedOrders, error: countErr } = await supabase
+            .from('orders')
+            .select('id, service:services(category)')
+            .eq('seller_id', order.seller_id)
+            .eq('status', 'completed');
+            
+          if (!countErr && completedOrders) {
+            const validOrdersCount = completedOrders.filter(o => o.service && o.service.category !== 'SendiYou').length;
+            
+            const currentRank = order.seller?.rank || 'bronze';
+            let newRank = currentRank;
+
+            if (validOrdersCount >= 200) newRank = 'gold';
+            else if (validOrdersCount >= 100 && currentRank !== 'gold') newRank = 'silver';
+
+            if (newRank !== currentRank) {
+              await supabase.from('users').update({ rank: newRank }).eq('id', order.seller_id);
+              
+              const feePct = newRank === 'gold' ? '3%' : '6%';
+              
+              // In-app Notification
+              createNotification({
+                userId: order.seller_id,
+                type: 'rank_upgrade',
+                title: `🏆 Rank Upgraded to ${newRank.toUpperCase()}!`,
+                body: `Congratulations! You've completed ${validOrdersCount} orders. Your platform fee is now reduced to ${feePct}.`,
+                link: `/profile`,
+              });
+
+              // Email Notification
+              if (order.seller?.email) {
+                sendEmail({
+                  email: order.seller.email,
+                  subject: `🎉 Congratulations! You are now a ${newRank.toUpperCase()} rank seller!`,
+                  html: `
+                    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;text-align:center;">
+                      <div style="font-size:48px;margin-bottom:16px;">🏆</div>
+                      <h2 style="color:#635BFF">You leveled up to ${newRank.toUpperCase()}!</h2>
+                      <p style="color:#4A5568;font-size:16px;line-height:1.5;">
+                        Hi ${order.seller.name},<br/><br/>
+                        You've successfully completed <strong>${validOrdersCount}</strong> valid orders!<br/>
+                        As a reward for your amazing work, your platform fees have been reduced to <strong>${feePct}</strong>!
+                      </p>
+                      <a href="https://cosen.online/profile" style="display:inline-block;margin-top:24px;background:#635BFF;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">View Your Profile →</a>
+                    </div>
+                  `
+                }).catch(e => console.error('[Orders] Rank email error:', e.message));
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[Orders] Rank progression error:', err.message);
+        }
+      })();
     }
 
     res.status(200).json({ success: true, order: mapped });
