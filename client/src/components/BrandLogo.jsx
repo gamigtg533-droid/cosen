@@ -15,7 +15,7 @@ import useAuthStore from '../store/authStore';
 const sizes = {
   sm: { img: 'h-12' },
   md: { img: 'h-16' },
-  lg: { img: 'h-24' },
+  lg: { img: 'h-32' },
 };
 
 export default function BrandLogo({ size = 'md', onClick }) {
