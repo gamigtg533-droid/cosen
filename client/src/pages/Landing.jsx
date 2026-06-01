@@ -6,7 +6,7 @@ import {
   ChevronRight, ChevronLeft, Star, Shield, Zap, BookOpen,
   Code, Palette, UtensilsCrossed, Camera, Music, Search,
   ShieldCheck, BadgeCheck, ShoppingBag, Trophy, ArrowRight,
-  Users, Lock, Sparkles
+  Users, Lock, Sparkles, Mail, Instagram, Linkedin, MessageCircle
 } from 'lucide-react';
 import LottieModule from 'lottie-react';
 const Lottie = LottieModule.default || LottieModule;
@@ -653,14 +653,31 @@ export default function Landing() {
             <BrandLogo size="sm" />
             <span style={{ color:'#94A3B8', fontSize:'13px' }}>© 2025 Cosen</span>
           </div>
-          <nav style={{ display:'flex', flexWrap:'wrap', gap:'0 2rem' }}>
-            {[['Browse', '/browse'], ['Post a Service', '/services/new'], ['Sign Up', '/signup'], ['Login', '/login']].map(([label, href]) => (
-              <Link key={label} to={href} style={{ color:'#64748B', fontSize:'13px', textDecoration:'none', fontWeight:500, transition:'color .2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#635BFF'}
-                onMouseLeave={e => e.currentTarget.style.color = '#64748B'}
-              >{label}</Link>
-            ))}
-          </nav>
+          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'2rem', marginTop: '1rem' }}>
+            <nav style={{ display:'flex', flexWrap:'wrap', gap:'1rem 2rem' }}>
+              {[['Browse', '/browse'], ['Post a Service', '/services/new'], ['Sign Up', '/signup'], ['Login', '/login']].map(([label, href]) => (
+                <Link key={label} to={href} style={{ color:'#64748B', fontSize:'13px', textDecoration:'none', fontWeight:500, transition:'color .2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#635BFF'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#64748B'}
+                >{label}</Link>
+              ))}
+            </nav>
+            <div style={{ display:'flex', alignItems:'center', gap:'1.25rem' }}>
+              <a href="mailto:cosen.hub@gmail.com" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s', display:'flex', alignItems:'center', gap:'0.5rem', textDecoration:'none' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="Email">
+                <Mail className="h-4 w-4" />
+                <span style={{ fontSize:'13px', fontWeight:500 }}>cosen.hub@gmail.com</span>
+              </a>
+              <a href="#" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="Instagram">
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a href="#" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="LinkedIn">
+                <Linkedin className="h-4 w-4" />
+              </a>
+              <a href="#" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="WhatsApp">
+                <MessageCircle className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
 
