@@ -549,4 +549,41 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 
 ---
 
-*Last updated: May 29, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
+### June 1-2, 2026 — Ranking System & SendiYou UI Hardening
+**Objective**: Introduce a gamified ranking system with dynamic platform fee discounts, fix multiple edge-cases in SendiYou profile editing, and improve UI responsiveness.
+
+#### 1. Dynamic Ranking System Implementation
+- Built a gamified progression system for sellers based on completed valid orders.
+- **Ranks & Perks**:
+  - **Bronze**: Default rank (10% platform fee).
+  - **Silver**: Unlocked at 100 valid orders (6% platform fee).
+  - **Gold**: Unlocked at 200 valid orders (3% platform fee).
+- Implemented backend verification logic in `orders.js` to automatically calculate fees on checkout based on the seller's rank.
+- Integrated fully automated **email and in-app notifications** for rank upgrades, triggering celebratory messages when a seller levels up.
+- *Note:* The `SendiYou` category is explicitly excluded from counting towards rank progression.
+
+#### 2. Dashboard Time Filtering
+- Upgraded the Dashboard (`Dashboard.jsx`) by wiring up functional time-based data filters.
+- Sellers and buyers can now filter their earnings, expenses, and order statistics by **Last 7 Days**, **Weeks**, and **Months**.
+
+#### 3. SendiYou Edit Form Lockdown
+- **Problem**: Users could change their gender preference, group size, or anonymous status *after* posting a SendiYou request, causing mismatches and privacy logic conflicts.
+- **Solution**: Locked down all core mechanics on `PostService.jsx` during edit mode. 
+- Fields like `Category`, `Preferred Gender`, `Connection Type`, `Group Size`, and `Identity Hidden` are now disabled, visually faded out, and marked with a "Locked" badge during edits. Users can only edit safe fields (Title, Description, Display Name, Tags, Cover Image).
+
+#### 4. Backend Display Name Persistence
+- Fixed a bug where editing a SendiYou post's `Display Name` wasn't saving.
+- Added `displayName: 'display_name'` to the `fieldMap` whitelist in `server/routes/services.js` (`PUT /services/:id`), enabling the backend to accept and commit the new display name to Supabase.
+
+#### 5. Responsive Order Chat UI
+- Fixed a rigid layout issue on the `OrderDetail.jsx` screen where the chat window was hardcoded to `520px` height.
+- Re-engineered the chat container to use fluid, responsive CSS (`calc(100vh - 220px)` with `min-height: 500px`), making it feel significantly more native and comfortable on taller screens and mobile devices.
+
+#### 6. Database Schema Hardening (Rank Column)
+- Diagnosed a critical `404 Service not found` error caused by missing SQL schema updates for the new Ranking System. 
+- The backend `orders.js` was querying `seller:users!seller_id(rank)` but the `rank` column did not exist.
+- Resolved by adding the `rank` column (`ALTER TABLE users ADD COLUMN rank text DEFAULT 'bronze'`) and added explicit error logging `console.error(svcErr)` across `orders.js` to prevent Supabase errors from being silently swallowed in the future.
+
+---
+
+*Last updated: June 2, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
