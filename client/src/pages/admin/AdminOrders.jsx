@@ -56,11 +56,16 @@ export default function AdminOrders() {
     }
   };
 
+  // Live-search when search or statusFilter changes
   useEffect(() => {
-    fetchOrdersList(1);
-  }, [statusFilter]);
+    const t = setTimeout(() => {
+      fetchOrdersList(1);
+    }, search ? 350 : 0);
 
-  // Trigger search on submit or debounce
+    return () => clearTimeout(t);
+  }, [search, statusFilter]);
+
+  // Trigger search immediately on submit
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchOrdersList(1);
