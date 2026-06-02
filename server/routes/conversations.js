@@ -80,7 +80,88 @@ router.get('/', protect, async (req, res) => {
     }
 
     const conversations = rows.map(r => mapConvo({ ...r, unread_count: unreadMap[r.id] || 0 }, userId));
-    res.json({ success: true, conversations });
+
+    // --- FETCH SENDIYOU ORDERS ---
+    const sendiFields = `
+      id, created_at, status, revealed_ids, buyer_ids, buyer_id, seller_id,
+      service:services!inner(category, display_name, expires_at, group_size),
+      buyer:users!buyer_id(id, name, avatar_url),
+      seller:users!seller_id(id, name, avatar_url)
+    `;
+
+    const [directRes, groupRes] = await Promise.all([
+      supabase.from('orders').select(sendiFields).eq('service.category', 'SendiYou').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`),
+      supabase.from('orders').select(sendiFields).eq('service.category', 'SendiYou').contains('buyer_ids', [userId])
+    ]);
+
+    const allSendi = [...(directRes.data || []), ...(groupRes.data || [])].filter((o, i, arr) => arr.findIndex(x => x.id === o.id) === i);
+    const sendiOrderIds = allSendi.map(o => o.id);
+
+    let sendiConversations = [];
+    if (sendiOrderIds.length > 0) {
+      const [unreadRes, msgsRes] = await Promise.all([
+        supabase.from('messages').select('order_id').in('order_id', sendiOrderIds).neq('sender_id', userId).eq('read', false),
+        supabase.from('messages').select('order_id, content, created_at').in('order_id', sendiOrderIds).order('created_at', { ascending: false })
+      ]);
+
+      let sendiUnread = {};
+      (unreadRes.data || []).forEach(r => {
+        sendiUnread[r.order_id] = (sendiUnread[r.order_id] || 0) + 1;
+      });
+
+      let latestMsgs = {};
+      (msgsRes.data || []).forEach(m => {
+        if (!latestMsgs[m.order_id]) latestMsgs[m.order_id] = m;
+      });
+
+      sendiConversations = allSendi.map(o => {
+        const isRevealed = (o.revealed_ids || []).includes(userId);
+        const lastMsg = latestMsgs[o.id];
+        const isGroup = o.service?.group_size > 1;
+
+        let otherName = 'SendiYou Connection';
+        let otherAvatar = '';
+
+        if (isGroup) {
+          otherName = 'SendiYou Group';
+        } else {
+          const other = o.buyer_id === userId ? o.seller : o.buyer;
+          if (other) {
+            // If they haven't revealed, mask it
+            const otherRevealed = (o.revealed_ids || []).includes(other.id);
+            if (otherRevealed || isRevealed) { // Reveal logic: if either revealed (based on recent fix) it's visible. Actually, independent reveal means if OTHER revealed, I can see them.
+              otherName = otherRevealed ? other.name : (o.service?.display_name || 'Secret');
+              otherAvatar = otherRevealed ? other.avatar_url : '';
+            } else {
+              otherName = o.service?.display_name || 'Secret';
+            }
+          }
+        }
+
+        return {
+          id: o.id,
+          type: 'sendiyou',
+          lastMessage: lastMsg ? lastMsg.content : (o.buyer_ids?.length > 1 ? 'Someone joined the group.' : 'Connection accepted!'),
+          lastMessageAt: lastMsg ? lastMsg.created_at : o.created_at,
+          createdAt: o.created_at,
+          other: { name: otherName, avatarUrl: otherAvatar },
+          unreadCount: sendiUnread[o.id] || 0,
+          sendiyou: {
+            isExpired: o.service?.expires_at ? new Date(o.service.expires_at) < new Date() : false,
+            expiresAt: o.service?.expires_at,
+            groupSize: o.service?.group_size || 1,
+            joinedCount: o.buyer_ids?.length || 1,
+            revealedIds: o.revealed_ids || []
+          }
+        };
+      });
+    }
+
+    const merged = [...conversations, ...sendiConversations].sort((a, b) => 
+      new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt)
+    );
+
+    res.json({ success: true, conversations: merged });
   } catch (err) {
     console.error('GET /conversations error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -259,7 +340,28 @@ router.get('/unread-count', protect, async (req, res) => {
       .eq('read', false);
 
     if (error) throw error;
-    res.json({ success: true, count: count || 0 });
+    let totalCount = count || 0;
+
+    // SendiYou unread count
+    const [directRes, groupRes] = await Promise.all([
+      supabase.from('orders').select('id, service:services!inner(category)').eq('service.category', 'SendiYou').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`),
+      supabase.from('orders').select('id, service:services!inner(category)').eq('service.category', 'SendiYou').contains('buyer_ids', [userId])
+    ]);
+    const allSendi = [...(directRes.data || []), ...(groupRes.data || [])].filter((o, i, arr) => arr.findIndex(x => x.id === o.id) === i);
+    const sendiOrderIds = allSendi.map(o => o.id);
+
+    if (sendiOrderIds.length > 0) {
+      const { count: sCount } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .in('order_id', sendiOrderIds)
+        .neq('sender_id', userId)
+        .eq('read', false);
+      
+      if (sCount) totalCount += sCount;
+    }
+
+    res.json({ success: true, count: totalCount });
   } catch (err) {
     res.status(500).json({ success: false, count: 0 });
   }

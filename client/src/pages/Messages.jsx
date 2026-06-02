@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
   Send, Loader, MessageCircle, Search, ArrowLeft,
-  Clock,
+  Clock, Unlock, Lock, AlertCircle
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
@@ -68,7 +68,10 @@ export default function Messages() {
     const load = async () => {
       setMsgLoading(true);
       try {
-        const { data } = await api.get(`/conversations/${activeId}/messages`);
+        const url = activeConvo?.type === 'sendiyou' 
+          ? `/messages/order/${activeId}`
+          : `/conversations/${activeId}/messages`;
+        const { data } = await api.get(url);
         setMessages(data.messages || []);
         // Mark as read locally (remove unread badge)
         setConversations(prev =>
@@ -141,14 +144,39 @@ export default function Messages() {
       );
     });
 
+    socket.on('receive_message', (msg) => {
+      setMessages(prev => {
+        if (prev.some(m => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === msg.orderId
+            ? {
+                ...c,
+                lastMessage: msg.content,
+                lastMessageAt: msg.createdAt,
+                unreadCount: msg.senderId !== user._id && msg.orderId !== activeId
+                  ? (c.unreadCount || 0) + 1
+                  : c.unreadCount,
+              }
+            : c
+        )
+      );
+    });
+
     return () => socket.disconnect();
   }, [user, activeId]);
 
   // ── Join/leave DM room on activeId change ───────────────────
   useEffect(() => {
     if (!activeId || !socketRef.current) return;
-    socketRef.current.emit('join_dm', activeId);
-  }, [activeId]);
+    if (activeConvo?.type === 'sendiyou') {
+      socketRef.current.emit('join_order', activeId);
+    } else {
+      socketRef.current.emit('join_dm', activeId);
+    }
+  }, [activeId, activeConvo?.type]);
 
   // ── Auto-scroll ─────────────────────────────────────────────
   useEffect(() => {
@@ -165,7 +193,10 @@ export default function Messages() {
     inputRef.current?.focus();
     
     try {
-      const { data } = await api.post(`/conversations/${activeId}/messages`, { content });
+      const url = activeConvo?.type === 'sendiyou' 
+        ? `/messages/order/${activeId}`
+        : `/conversations/${activeId}/messages`;
+      const { data } = await api.post(url, { content });
       if (data.success && data.message) {
         setMessages(prev => {
           if (prev.some(m => m._id === data.message._id)) return prev;
@@ -183,6 +214,17 @@ export default function Messages() {
   const selectConvo = (id) => {
     setActiveId(id);
     setMobileView('chat');
+  };
+
+  const handleRevealToggle = async () => {
+    try {
+      const { data } = await api.put(`/sendiyou/order/${activeId}/reveal`);
+      if (data.success) {
+         loadConversations();
+      }
+    } catch(err) {
+      // ignore
+    }
   };
 
   // ── Filtered conversations ──────────────────────────────────
@@ -286,6 +328,7 @@ export default function Messages() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-stripe-slate text-sm truncate">
+                          {c.type === 'sendiyou' && <span title="SendiYou" className="mr-1">💌</span>}
                           {c.other?.name || 'Unknown'}
                         </span>
                         <span className="text-[10px] text-stripe-muted shrink-0 flex items-center gap-0.5">
@@ -371,10 +414,42 @@ export default function Messages() {
                     >
                       {activeConvo?.other?.name || '…'}
                     </Link>
-                    <div className="text-xs text-stripe-muted">
-                      {onlineUsers.has(activeConvo?.other?._id) ? 'Online' : 'Offline'}
+                    <div className="text-xs text-stripe-muted flex items-center gap-2 mt-0.5">
+                      {activeConvo?.type !== 'sendiyou' && (
+                        <span>{onlineUsers.has(activeConvo?.other?._id) ? 'Online' : 'Offline'}</span>
+                      )}
+                      {activeConvo?.type === 'sendiyou' && (
+                        <>
+                          <span className="flex items-center gap-1 font-medium bg-slate-100 px-1.5 rounded text-[10px]">
+                            👥 {activeConvo.sendiyou?.joinedCount}/{activeConvo.sendiyou?.groupSize}
+                          </span>
+                          {activeConvo.sendiyou?.isExpired && (
+                            <span className="flex items-center gap-1 text-red-500 font-medium">
+                              <AlertCircle className="w-3 h-3" /> Expired
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
+
+                  {activeConvo?.type === 'sendiyou' && (
+                    <button
+                      onClick={handleRevealToggle}
+                      className={`
+                        shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all
+                        ${activeConvo.sendiyou?.revealedIds?.includes(user?._id)
+                          ? 'bg-stripe-purple/10 text-stripe-purple border border-stripe-purple/20 hover:bg-stripe-purple/20'
+                          : 'bg-white text-stripe-slate border border-stripe-border shadow-sm hover:border-stripe-purple hover:text-stripe-purple'}
+                      `}
+                    >
+                      {activeConvo.sendiyou?.revealedIds?.includes(user?._id) ? (
+                        <><Unlock className="w-3 h-3" /> Revealed</>
+                      ) : (
+                        <><Lock className="w-3 h-3" /> Secret</>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Messages area */}
@@ -436,28 +511,36 @@ export default function Messages() {
                 </div>
 
                 {/* Input */}
-                <form onSubmit={handleSend} className="p-4 bg-white border-t border-stripe-border">
-                  <div className="relative flex items-center gap-2">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={newMsg}
-                      onChange={e => setNewMsg(e.target.value)}
-                      placeholder="Type a message…"
-                      className="stripe-input flex-1 pr-12 py-3"
-                      autoComplete="off"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!newMsg.trim() || sending}
-                      className="absolute right-2 p-1.5 bg-stripe-purple text-white rounded-lg disabled:opacity-40 hover:bg-[#524ae3] transition-colors"
-                    >
-                      {sending
-                        ? <Loader className="h-4 w-4 animate-spin" />
-                        : <Send className="h-4 w-4" />}
-                    </button>
+                {activeConvo?.type === 'sendiyou' && activeConvo?.sendiyou?.isExpired ? (
+                  <div className="p-4 bg-slate-50 border-t border-stripe-border text-center">
+                    <p className="text-sm text-stripe-muted font-medium flex items-center justify-center gap-2">
+                      <AlertCircle className="w-4 h-4" /> This SendiYou connection has expired.
+                    </p>
                   </div>
-                </form>
+                ) : (
+                  <form onSubmit={handleSend} className="p-4 bg-white border-t border-stripe-border">
+                    <div className="relative flex items-center gap-2">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={newMsg}
+                        onChange={e => setNewMsg(e.target.value)}
+                        placeholder="Type a message…"
+                        className="stripe-input flex-1 pr-12 py-3"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newMsg.trim() || sending}
+                        className="absolute right-2 p-1.5 bg-stripe-purple text-white rounded-lg disabled:opacity-40 hover:bg-[#524ae3] transition-colors"
+                      >
+                        {sending
+                          ? <Loader className="h-4 w-4 animate-spin" />
+                          : <Send className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </>
             )}
           </div>
