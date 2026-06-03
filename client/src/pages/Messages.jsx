@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
   Send, Loader, MessageCircle, Search, ArrowLeft,
-  Clock, Unlock, Lock, AlertCircle
+  Clock, Unlock, Lock, AlertCircle, Users, X, ChevronRight
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
@@ -40,6 +40,8 @@ export default function Messages() {
   const [search,         setSearch]         = useState('');
   const [activeTab,      setActiveTab]      = useState('direct'); // 'direct' | 'sendiyou'
   const [mobileView,     setMobileView]     = useState('list'); // 'list' | 'chat'
+  const [showMembers,    setShowMembers]    = useState(false); // members panel
+  const [groupMembers,   setGroupMembers]   = useState([]); // [{id, alias, isRevealed, name, avatarUrl}]
 
   const socketRef    = useRef(null);
   const chatEndRef   = useRef(null);
@@ -74,6 +76,8 @@ export default function Messages() {
           : `/conversations/${activeId}/messages`;
         const { data } = await api.get(url);
         setMessages(data.messages || []);
+        // Store group member list if SendiYou
+        if (data.members) setGroupMembers(data.members);
         // Mark as read locally (remove unread badge)
         setConversations(prev =>
           prev.map(c => c.id === activeId ? { ...c, unreadCount: 0 } : c)
@@ -221,7 +225,10 @@ export default function Messages() {
     try {
       const { data } = await api.put(`/sendiyou/order/${activeId}/reveal`);
       if (data.success) {
-         loadConversations();
+        loadConversations();
+        // Re-fetch messages to refresh member list
+        const { data: msgData } = await api.get(`/messages/order/${activeId}`);
+        if (msgData.members) setGroupMembers(msgData.members);
       }
     } catch(err) {
       // ignore
@@ -437,23 +444,36 @@ export default function Messages() {
                     />
                   </Link>
 
-                  {/* Name — clickable → profile */}
+                  {/* Name — for sendiyou make group name/count clickable to open panel */}
                   <div className="flex-1 min-w-0">
-                    <Link
-                      to={`/profile/${activeConvo?.other?._id}`}
-                      className="font-semibold text-stripe-slate text-sm truncate hover:text-stripe-purple transition-colors block"
-                    >
-                      {activeConvo?.other?.name || '…'}
-                    </Link>
+                    {activeConvo?.type === 'sendiyou' ? (
+                      <button
+                        onClick={() => setShowMembers(p => !p)}
+                        className="font-semibold text-stripe-slate text-sm truncate hover:text-stripe-purple transition-colors block text-left w-full"
+                      >
+                        {activeConvo?.other?.name || '…'}
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/profile/${activeConvo?.other?._id}`}
+                        className="font-semibold text-stripe-slate text-sm truncate hover:text-stripe-purple transition-colors block"
+                      >
+                        {activeConvo?.other?.name || '…'}
+                      </Link>
+                    )}
                     <div className="text-xs text-stripe-muted flex items-center gap-2 mt-0.5">
                       {activeConvo?.type !== 'sendiyou' && (
                         <span>{onlineUsers.has(activeConvo?.other?._id) ? 'Online' : 'Offline'}</span>
                       )}
                       {activeConvo?.type === 'sendiyou' && (
                         <>
-                          <span className="flex items-center gap-1 font-medium bg-slate-100 px-1.5 rounded text-[10px]">
-                            👥 {activeConvo.sendiyou?.joinedCount}/{activeConvo.sendiyou?.groupSize}
-                          </span>
+                          <button
+                            onClick={() => setShowMembers(p => !p)}
+                            className="flex items-center gap-1 font-medium bg-slate-100 hover:bg-stripe-purple/10 hover:text-stripe-purple px-1.5 rounded text-[10px] transition-colors cursor-pointer"
+                          >
+                            <Users className="w-2.5 h-2.5" />
+                            {activeConvo.sendiyou?.joinedCount}/{activeConvo.sendiyou?.groupSize} members
+                          </button>
                           {activeConvo.sendiyou?.isExpired && (
                             <span className="flex items-center gap-1 text-red-500 font-medium">
                               <AlertCircle className="w-3 h-3" /> Expired
@@ -483,8 +503,10 @@ export default function Messages() {
                   )}
                 </div>
 
-                {/* Messages area */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 bg-slate-50/50/50">
+                {/* Messages area — with Members Panel overlay for SendiYou */}
+                <div className="flex-1 overflow-hidden relative flex">
+                  {/* Actual messages scroll area */}
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 bg-slate-50/50">
                   {msgLoading ? (
                     <div className="flex justify-center py-10">
                       <LottieLoader size={80} text="Loading messages..." />
@@ -499,24 +521,44 @@ export default function Messages() {
                   ) : (
                     messages.map(m => {
                       const isMine = (m.sender?._id || m.senderId) === user._id;
-                      const senderName    = isMine ? 'You' : (m.sender?.name || activeConvo?.other?.name);
-                      const senderAvatar  = isMine ? user.avatar?.url : (m.sender?.avatarUrl || activeConvo?.other?.avatarUrl);
-                      const senderInitials = senderName?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?';
-                      const senderId      = m.sender?._id || m.senderId;
+                      const senderId = m.sender?._id || m.senderId;
+                      
+                      // For SendiYou groups: use alias instead of real name
+                      const isGroup = activeConvo?.type === 'sendiyou' && (activeConvo?.sendiyou?.groupSize || 1) > 1;
+                      const memberAliases = activeConvo?.sendiyou?.memberAliases || {};
+                      const revealedIds = activeConvo?.sendiyou?.revealedIds || [];
+                      const senderAlias = isGroup ? (memberAliases[senderId] || '?') : null;
+                      const senderIsRevealed = revealedIds.includes(senderId);
+
+                      const senderName = isMine
+                        ? `You${senderAlias ? ` (${senderAlias})` : ''}`
+                        : isGroup
+                          ? (senderIsRevealed && m.sender?.name)
+                            ? `${m.sender.name} (${senderAlias})`
+                            : senderAlias || m.sender?.name || activeConvo?.other?.name
+                          : (m.sender?.name || activeConvo?.other?.name);
+
+                      const senderAvatar = isMine
+                        ? user.avatar?.url
+                        : (senderIsRevealed || !isGroup)
+                          ? (m.sender?.avatar?.url || m.sender?.avatarUrl || activeConvo?.other?.avatarUrl)
+                          : null; // hidden if not revealed
+                      const senderInitials = (senderAlias || senderName)?.slice(0, 2).toUpperCase() || '?';
+
                       return (
                         <div key={m._id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'} items-end`}>
-                          {/* Tiny avatar per bubble */}
+                          {/* Avatar per bubble */}
                           {!isMine && (
-                            <Link to={`/profile/${senderId}`} className="shrink-0 mb-1" title={senderName}>
+                            <div className="shrink-0 mb-1">
                               {senderAvatar ? (
                                 <img src={senderAvatar} alt={senderName}
-                                  className="w-7 h-7 rounded-full object-cover hover:ring-2 hover:ring-stripe-purple transition-all" />
+                                  className="w-7 h-7 rounded-full object-cover" />
                               ) : (
-                                <div className="w-7 h-7 rounded-full bg-stripe-purple text-white flex items-center justify-center text-[10px] font-bold hover:ring-2 hover:ring-stripe-purple transition-all">
+                                <div className="w-7 h-7 rounded-full bg-stripe-purple text-white flex items-center justify-center text-[10px] font-bold">
                                   {senderInitials}
                                 </div>
                               )}
-                            </Link>
+                            </div>
                           )}
                           <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-[70%]`}>
                             <div className="text-[10px] text-stripe-muted mb-1 px-1">
@@ -539,6 +581,73 @@ export default function Messages() {
                     })
                   )}
                   <div ref={chatEndRef} />
+                  </div>
+
+                  {/* Members Panel — slides in from right for SendiYou groups */}
+                  {activeConvo?.type === 'sendiyou' && showMembers && (
+                    <div className="w-64 shrink-0 border-l border-stripe-border bg-white flex flex-col shadow-lg">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-stripe-border">
+                        <span className="font-bold text-stripe-slate text-sm flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-stripe-purple" /> Members
+                        </span>
+                        <button onClick={() => setShowMembers(false)} className="p-1 hover:bg-slate-100 rounded-md transition-colors">
+                          <X className="w-4 h-4 text-stripe-muted" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto divide-y divide-stripe-border">
+                        {groupMembers.length === 0 ? (
+                          <p className="text-stripe-muted text-xs text-center py-8">No members yet</p>
+                        ) : groupMembers.map(member => (
+                          <div key={member.id} className="px-4 py-3 flex items-center gap-3">
+                            {/* Avatar circle — clickable if revealed */}
+                            {member.isRevealed && member.id !== user?._id ? (
+                              <Link to={`/profile/${member.id}`} className="shrink-0" title={`View ${member.name}'s profile`}>
+                                {member.avatarUrl ? (
+                                  <img src={member.avatarUrl} alt={member.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-stripe-purple/30 hover:ring-stripe-purple transition-all" />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-full bg-stripe-purple/10 text-stripe-purple flex items-center justify-center font-bold text-sm ring-2 ring-stripe-purple/30 hover:ring-stripe-purple transition-all">
+                                    {member.alias}
+                                  </div>
+                                )}
+                              </Link>
+                            ) : (
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                                member.id === user?._id
+                                  ? 'bg-stripe-purple text-white'
+                                  : 'bg-slate-100 text-stripe-slate'
+                              }`}>
+                                {member.alias}
+                              </div>
+                            )}
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold text-stripe-slate text-xs">
+                                  {member.alias}
+                                  {member.id === user?._id && <span className="text-stripe-muted font-normal"> (you)</span>}
+                                </span>
+                                {member.isRevealed ? (
+                                  <Unlock className="w-3 h-3 text-green-500 shrink-0" />
+                                ) : (
+                                  <Lock className="w-3 h-3 text-stripe-muted shrink-0" />
+                                )}
+                              </div>
+                              {member.isRevealed && member.name && (
+                                <div className="text-[10px] text-stripe-muted truncate">{member.name}</div>
+                              )}
+                            </div>
+
+                            {/* Profile link arrow for revealed members (not yourself) */}
+                            {member.isRevealed && member.id !== user?._id && (
+                              <Link to={`/profile/${member.id}`} title="View profile" className="shrink-0 text-stripe-muted hover:text-stripe-purple transition-colors">
+                                <ChevronRight className="w-4 h-4" />
+                              </Link>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Input */}

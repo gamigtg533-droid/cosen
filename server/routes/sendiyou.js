@@ -5,6 +5,18 @@ const { supabase } = require('../config/db');
 const createNotification = require('../utils/createNotification');
 const { mapOrder } = require('./orders');
 
+// ── Helper: generate A-Z, AA, AB... alias from index ────────────
+function generateAlias(index) {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let alias = '';
+  let n = index;
+  do {
+    alias = letters[n % 26] + alias;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return alias;
+}
+
 // ─────────────────────────────────────────────────────────────
 // POST /api/sendiyou/:serviceId/accept — Accept a SendiYou post
 // ─────────────────────────────────────────────────────────────
@@ -45,7 +57,7 @@ router.post('/:serviceId/accept', protect, async (req, res) => {
     // 3. Check if a group order already exists for this service
     const { data: existingOrder } = await supabase
       .from('orders')
-      .select('id, buyer_ids')
+      .select('id, buyer_ids, member_aliases')
       .eq('service_id', serviceId)
       .eq('seller_id', service.seller_id)
       .maybeSingle();
@@ -70,9 +82,15 @@ router.post('/:serviceId/accept', protect, async (req, res) => {
       const updatedMembers = [...currentMembers, userId];
       const isFull = updatedMembers.length >= groupSize;
 
+      // Assign next alias to new member
+      // Seller = index 0 (A), first buyer = index 1 (B), next = index 2 (C)...
+      const currentAliases = existingOrder.member_aliases || {};
+      const nextIndex = Object.keys(currentAliases).length; // next slot
+      const updatedAliases = { ...currentAliases, [userId]: generateAlias(nextIndex) };
+
       const { error: updateErr } = await supabase
         .from('orders')
-        .update({ buyer_ids: updatedMembers })
+        .update({ buyer_ids: updatedMembers, member_aliases: updatedAliases })
         .eq('id', existingOrder.id);
 
       if (updateErr) throw updateErr;
@@ -98,6 +116,12 @@ router.post('/:serviceId/accept', protect, async (req, res) => {
           .eq('id', serviceId);
       }
 
+      // Seller gets alias "A" (index 0), first joiner gets "B" (index 1)
+      const initialAliases = {
+        [service.seller_id]: generateAlias(0), // A
+        [userId]: generateAlias(1),             // B
+      };
+
       const { data: newOrder, error: orderErr } = await supabase
         .from('orders')
         .insert({
@@ -112,6 +136,7 @@ router.post('/:serviceId/accept', protect, async (req, res) => {
           buyer_revealed: false,
           seller_revealed: false,
           buyer_ids: [userId],
+          member_aliases: initialAliases,
         })
         .select('id')
         .single();

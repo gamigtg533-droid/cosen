@@ -97,7 +97,7 @@ router.get('/', protect, async (req, res) => {
     let allSendi = [];
     if (sendiServiceIds.length > 0) {
       const sendiFields = `
-        id, created_at, status, revealed_ids, buyer_ids, buyer_id, seller_id, service_id,
+        id, created_at, status, revealed_ids, buyer_ids, buyer_id, seller_id, service_id, member_aliases,
         buyer:users!buyer_id(id, name, avatar_url),
         seller:users!seller_id(id, name, avatar_url)
       `;
@@ -206,6 +206,7 @@ router.get('/', protect, async (req, res) => {
             groupSize: o.service?.group_size || 1,
             joinedCount: o.buyer_ids?.length || 0,
             revealedIds: o.revealed_ids || [],
+            memberAliases: o.member_aliases || {},
             isSeller,
           }
         };

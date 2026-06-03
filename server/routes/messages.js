@@ -23,10 +23,11 @@ const mapMessage = (row) => {
 };
 
 // Helper: verify user is buyer, seller, OR group member of the order
+// Returns the full order row (including member_aliases, revealed_ids, buyer_ids) or false
 const verifyOrderAccess = async (orderId, userId) => {
   const { data: order } = await supabase
     .from('orders')
-    .select('id, buyer_id, seller_id, buyer_ids')
+    .select('id, buyer_id, seller_id, buyer_ids, member_aliases, revealed_ids')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -43,7 +44,8 @@ const verifyOrderAccess = async (orderId, userId) => {
 // ─────────────────────────────────────────────────────────────
 router.get('/order/:orderId', protect, async (req, res) => {
   try {
-    const access = await verifyOrderAccess(req.params.orderId, req.user._id);
+    const userId = req.user._id;
+    const access = await verifyOrderAccess(req.params.orderId, userId);
     if (!access) return res.status(403).json({ success: false, message: 'Access denied' });
 
     const { data: messages, error } = await supabase
@@ -59,11 +61,53 @@ router.get('/order/:orderId', protect, async (req, res) => {
       .from('messages')
       .update({ read: true })
       .eq('order_id', req.params.orderId)
-      .neq('sender_id', req.user._id)
+      .neq('sender_id', userId)
       .eq('read', false);
 
-    res.status(200).json({ success: true, messages: messages.map(mapMessage) });
+    // Fetch all group member profiles for the members panel
+    const allMemberIds = [
+      access.seller_id,
+      ...(access.buyer_ids || [])
+    ].filter(Boolean);
+
+    let membersMap = {};
+    if (allMemberIds.length > 0) {
+      const { data: memberProfiles } = await supabase
+        .from('users')
+        .select('id, name, avatar_url, department, year_of_study')
+        .in('id', allMemberIds);
+
+      (memberProfiles || []).forEach(p => { membersMap[p.id] = p; });
+    }
+
+    // Build members list with alias + reveal status
+    const memberAliases = access.member_aliases || {};
+    const revealedIds = access.revealed_ids || [];
+
+    const members = allMemberIds.map(id => {
+      const profile = membersMap[id] || {};
+      const isRevealed = revealedIds.includes(id);
+      return {
+        id,
+        alias: memberAliases[id] || '?',
+        isRevealed,
+        // Only expose real identity if they have revealed
+        name: isRevealed ? (profile.name || null) : null,
+        avatarUrl: isRevealed ? (profile.avatar_url || null) : null,
+        department: isRevealed ? (profile.department || null) : null,
+        yearOfStudy: isRevealed ? (profile.year_of_study || null) : null,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      messages: messages.map(mapMessage),
+      memberAliases,
+      revealedIds,
+      members,
+    });
   } catch (error) {
+    console.error('GET /messages/order error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -102,6 +146,7 @@ router.post('/order/:orderId', protect, async (req, res) => {
 
     res.status(201).json({ success: true, message: mapped });
   } catch (error) {
+    console.error('POST /messages/order error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
