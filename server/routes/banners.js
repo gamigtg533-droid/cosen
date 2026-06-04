@@ -80,7 +80,6 @@ router.post('/admin', protect, adminOnly, upload.single('file'), async (req, res
         label: (req.body.label || '').trim() || null,
         sort_order: nextOrder,
         is_active: true,
-        storage_path: fileName,
       })
       .select('*')
       .single();
@@ -118,19 +117,24 @@ router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Fetch banner to get storage_path
+    // Fetch banner to get URL (we derive storage path from it)
     const { data: banner, error: fetchErr } = await supabase
       .from('hero_banners')
-      .select('id, storage_path')
+      .select('id, url')
       .eq('id', id)
       .maybeSingle();
 
     if (fetchErr || !banner) return res.status(404).json({ success: false, message: 'Banner not found' });
 
-    // Delete from Supabase Storage
-    if (banner.storage_path) {
-      await supabase.storage.from('uploads').remove([banner.storage_path]);
-    }
+    // Derive storage path from the public URL
+    // URL format: https://<project>.supabase.co/storage/v1/object/public/uploads/hero_banners/<file>
+    try {
+      const urlObj = new URL(banner.url);
+      const parts = urlObj.pathname.split('/public/uploads/');
+      if (parts[1]) {
+        await supabase.storage.from('uploads').remove([parts[1]]);
+      }
+    } catch (_) { /* ignore storage delete errors */ }
 
     // Delete from DB
     const { error: deleteErr } = await supabase.from('hero_banners').delete().eq('id', id);
