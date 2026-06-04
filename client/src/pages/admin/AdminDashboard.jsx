@@ -155,7 +155,7 @@ export default function AdminDashboard() {
       {/* Financial metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard icon={DollarSign} label="Total Escrow Volume" value={fmt(stats?.totalEscrowVolume)} color="#635BFF" sub="All-time completed orders" />
-        <StatCard icon={TrendingUp} label="Platform Revenue" value={fmt(stats?.totalPlatformRevenue)} color="#00D4AA" sub="10% commission on completed orders" />
+        <StatCard icon={TrendingUp} label="Platform Revenue" value={fmt(stats?.totalPlatformRevenue)} color="#00D4AA" sub="Rank-based commission (Bronze 10%, Silver 6%, Gold 3%)" />
         <StatCard icon={CheckCircle} label="Completed Orders" value={fmtNum(stats?.completedOrders)} color="#A855F7" sub={`of ${fmtNum(stats?.totalOrders)} total`} />
       </div>
 
