@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, Star, ChevronRight, ChevronLeft, Loader, X, BadgeCheck, ShoppingBag, Heart, Eye, EyeOff } from 'lucide-react';
+import { Search, SlidersHorizontal, Star, ChevronRight, ChevronLeft, Loader, X, BadgeCheck, ShoppingBag, Heart, Eye, EyeOff, LayoutGrid, Code, Palette, BookOpen, Coffee, Camera, Trophy, Sparkles } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
 import LottieLoader from '../components/LottieLoader';
@@ -19,15 +19,15 @@ const MOCK = [
 // Category config — icon only (no text in pills)
 const CATS = ['All', 'SendiYou', 'Tech & Coding', 'Art & Design', 'Study Helper', 'Food Friendship', 'Photography', 'Playground', 'Other Talents'];
 const catIcon = {
-  'All':            '✦',
-  'SendiYou':       '💌',
-  'Tech & Coding':  '💻',
-  'Art & Design':   '🎨',
-  'Study Helper':   '📚',
-  'Food Friendship':'🍱',
-  'Photography':    '📸',
-  'Playground':     '⚽',
-  'Other Talents':  '✨',
+  'All':            <LayoutGrid className="w-5 h-5" />,
+  'SendiYou':       <Heart className="w-5 h-5" />,
+  'Tech & Coding':  <Code className="w-5 h-5" />,
+  'Art & Design':   <Palette className="w-5 h-5" />,
+  'Study Helper':   <BookOpen className="w-5 h-5" />,
+  'Food Friendship':<Coffee className="w-5 h-5" />,
+  'Photography':    <Camera className="w-5 h-5" />,
+  'Playground':     <Trophy className="w-5 h-5" />,
+  'Other Talents':  <Sparkles className="w-5 h-5" />,
 };
 const catBg = {
   'SendiYou':        'linear-gradient(135deg,#FFF0F6,#FFE0ED)',
