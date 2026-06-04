@@ -655,7 +655,7 @@ export default function Landing() {
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'2rem', marginTop: '1rem' }}>
             <nav style={{ display:'flex', flexWrap:'wrap', gap:'1rem 2rem' }}>
-              {[['Browse', '/browse'], ['Post a Service', '/services/new'], ['Sign Up', '/signup'], ['Login', '/login']].map(([label, href]) => (
+              {[['Browse', '/browse'], ['Post a Service', '/services/new'], ['Sign Up', '/signup'], ['Login', '/login'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms & Conditions', '/terms'], ['Refund Policy', '/refund']].map(([label, href]) => (
                 <Link key={label} to={href} style={{ color:'#64748B', fontSize:'13px', textDecoration:'none', fontWeight:500, transition:'color .2s' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#635BFF'}
                   onMouseLeave={e => e.currentTarget.style.color = '#64748B'}

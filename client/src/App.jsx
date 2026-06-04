@@ -17,6 +17,10 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Messages from './pages/Messages';
 import SellerProfile from './pages/SellerProfile';
+import Contact from './pages/legal/Contact';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import Terms from './pages/legal/Terms';
+import RefundPolicy from './pages/legal/RefundPolicy';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import GenderModal from './components/GenderModal';
@@ -96,6 +100,10 @@ function App() {
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password/:token" element={<ResetPassword />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/refund" element={<RefundPolicy />} />
                   <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
                   <Route path="/services/new" element={<ProtectedRoute><PostService /></ProtectedRoute>} />
                   <Route path="/services/:id" element={<ProtectedRoute><ServiceDetail /></ProtectedRoute>} />
