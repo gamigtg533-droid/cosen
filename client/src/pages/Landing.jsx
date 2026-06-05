@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import BrandLogo from '../components/BrandLogo';
+import Footer from '../components/Footer';
 import {
   ChevronRight, ChevronLeft, Star, Shield, Zap, BookOpen,
   Code, Palette, UtensilsCrossed, Camera, Music, Search,
@@ -19,6 +20,11 @@ import person3 from '../assets/person3.jpg';
 import person4 from '../assets/person4.jpg';
 import person5 from '../assets/person5.jpg';
 import person6 from '../assets/person6.jpg';
+
+import imgTech from '../assets/hero_banner_images/Tech_help.png';
+import imgSendiYou from '../assets/hero_banner_images/sendiyou.png';
+import imgPlayground from '../assets/hero_banner_images/playground.png';
+import imgStudy from '../assets/hero_banner_images/Study_helper.png';
 
 const categories = [
   { name: 'Study Helper',     icon: BookOpen,        color: '#0EA878', count: 120, desc: 'Tutoring & exam prep' },
@@ -49,17 +55,17 @@ const catBg = {
 
 const MOCK_FEATURED = [
   { _id: '1', title: 'Python Debugging & Full CS Tutoring', description: 'Struggling with DSA, OOP, or Python assignments? I offer 1-on-1 sessions, assignment help, and project reviews.', seller: { name: 'Arjun Mehta', department: "Computer Science '25", avatar: person2 }, rating: 4.9, reviewCount: 28, price: 499, category: 'Tech & Coding', deliveryDays: 1, ordersCompleted: 43 },
-  { _id: '2', title: 'Logo & Brand Identity Design for Your Club', description: 'Professional logo, color palette, and brand guide. Unlimited revisions in 48 hours — guaranteed satisfaction.', seller: { name: 'Priya Patel', department: "Fine Arts '26", avatar: person1 }, rating: 5.0, reviewCount: 17, price: 599, category: 'Art & Design', deliveryDays: 2, ordersCompleted: 29 },
+  { _id: '2', title: 'Logo & Brand Identity Design for Your Club', description: 'Professional logo, color palette, and brand guide. Unlimited revisions in 48 hours. Guaranteed satisfaction.', seller: { name: 'Priya Patel', department: "Fine Arts '26", avatar: person1 }, rating: 5.0, reviewCount: 17, price: 599, category: 'Art & Design', deliveryDays: 2, ordersCompleted: 29 },
   { _id: '3', title: 'Calculus II & Linear Algebra Tutoring', description: 'Gold medallist in Engineering Mathematics. Covers limits, integrals, eigen values, and exam prep.', seller: { name: 'Rahul Sharma', department: "Mathematics '25", avatar: person3 }, rating: 4.8, reviewCount: 34, price: 449, category: 'Study Helper', deliveryDays: 1, ordersCompleted: 61 },
-  { _id: '4', title: 'Homemade Rajma Chawal & Tiffin Service', description: 'Tired of mess food? I cook authentic home-style North Indian meals — fresh, hygienic, delivered to your hostel.', seller: { name: 'Anjali Gupta', department: "Home Science '25", avatar: person4 }, rating: 4.9, reviewCount: 41, price: 80, category: 'Food Friendship', deliveryDays: 1, ordersCompleted: 78 },
+  { _id: '4', title: 'Homemade Rajma Chawal & Tiffin Service', description: 'Tired of mess food? I cook authentic home-style North Indian meals. Fresh, hygienic, delivered to your hostel.', seller: { name: 'Anjali Gupta', department: "Home Science '25", avatar: person4 }, rating: 4.9, reviewCount: 41, price: 80, category: 'Food Friendship', deliveryDays: 1, ordersCompleted: 78 },
   { _id: '5', title: 'Campus Portrait & Event Photography', description: 'Professional event, portfolio and portrait photography. High-res editing, raw files, and fast delivery.', seller: { name: 'Divya Nair', department: "Fine Arts '26", avatar: person5 }, rating: 4.9, reviewCount: 22, price: 999, category: 'Photography', deliveryDays: 2, ordersCompleted: 35 },
-  { _id: '6', title: 'Acoustic Guitar Lessons — Beginner to Intermediate', description: 'Certified ABRSM Grade 6 guitarist. Chords, fingerpicking, strumming, song covers. Patient teaching style.', seller: { name: 'Meera Iyer', department: "Music '27", avatar: person6 }, rating: 5.0, reviewCount: 9, price: 299, category: 'Other Talents', deliveryDays: 1, ordersCompleted: 18 },
+  { _id: '6', title: 'Acoustic Guitar Lessons: Beginner to Intermediate', description: 'Certified ABRSM Grade 6 guitarist. Chords, fingerpicking, strumming, song covers. Patient teaching style.', seller: { name: 'Meera Iyer', department: "Music '27", avatar: person6 }, rating: 5.0, reviewCount: 9, price: 299, category: 'Other Talents', deliveryDays: 1, ordersCompleted: 18 },
 ];
 
 const steps = [
-  { number: '01', title: 'Sign up with your campus email', desc: 'Instant verification — only real students from your university. No outsiders, ever.' },
+  { number: '01', title: 'Sign up with your campus email', desc: 'Instant verification. Only real students from your university. No outsiders, ever.' },
   { number: '02', title: 'Share what you need or offer', desc: 'Post a request, offer a skill, or send an anonymous connection. Every need has a match.' },
-  { number: '03', title: "Connect, chat & transact safely", desc: "Message your match directly. Pay via escrow — money releases only when you're satisfied." },
+  { number: '03', title: "Connect, chat & transact safely", desc: "Message your match directly. Pay via escrow, money releases only when you're satisfied." },
 ];
 
 const getInitials = (s) =>
@@ -182,7 +188,7 @@ export default function Landing() {
 
           {/* Sub */}
           <p style={{ color:'rgba(255,255,255,0.65)', fontSize:'clamp(0.95rem,2vw,1.1rem)', lineHeight:1.65, maxWidth:'480px', marginBottom:'1.75rem', fontWeight:400 }}>
-            Skills, anonymous connections, group chats — one campus network for everything you need.
+            Skills, anonymous connections, group chats. One campus network for everything you need.
           </p>
 
           {/* Search */}
@@ -242,72 +248,94 @@ export default function Landing() {
       {/* ═══════════════════════════════════════════════════════
           VISION — Editorial split layout, no emoji boxes
       ═══════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════
+          WHAT COSEN IS (BENTO GRID)
+      ═══════════════════════════════════════════════════════ */}
       {!user && (
-        <section style={{ padding:'7rem clamp(1.5rem,6vw,5rem)', background:'#fff' }}>
-          <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-
-            {/* Top: label + big statement */}
-            <div className="fade-up" style={{ marginBottom:'5rem' }}>
-              <span style={{ fontSize:'11px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'#635BFF', display:'block', marginBottom:'1.5rem' }}>What Cosen is</span>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'3rem', alignItems:'end' }} className="vision-grid">
-                <h2 style={{ fontFamily:'Inter, sans-serif', fontSize:'clamp(2.2rem,4.5vw,3.5rem)', fontWeight:900, color:'#060C20', lineHeight:1.1, letterSpacing:'-0.03em', margin:0 }}>
-                  We don't sell services.<br />
-                  <span style={{ color:'#635BFF' }}>We connect people.</span>
-                </h2>
-                <p style={{ color:'#64748B', fontSize:'clamp(1rem,1.5vw,1.15rem)', lineHeight:1.75, margin:0, paddingBottom:'0.25rem' }}>
-                  Cosen is a living campus network where every student is both a seeker and a provider.
-                  Tutoring, design, food, anonymous matches, group chats — one place for every campus need.
-                </p>
-              </div>
-            </div>
-
-            {/* Three rows — each horizontal, alternating emphasis */}
-            <div className="fade-up" style={{ display:'flex', flexDirection:'column', gap:'0', borderTop:'1px solid #F1F5F9' }}>
-
-              {[
-                {
-                  num: '01',
-                  accent: '#635BFF',
-                  title: 'Skills meet needs',
-                  body: 'A student who codes connects with one who needs a website. One who cooks connects with a hosteller who needs food. Real value, no middlemen.',
-                  tag: 'Skill-based matching',
-                },
-                {
-                  num: '02',
-                  accent: '#EC4899',
-                  title: 'Anonymous connections',
-                  body: 'With SendiYou, reach out to a fellow student without showing your identity. Both parties choose if and when to reveal. Consent-first, always.',
-                  tag: 'SendiYou — unique to Cosen',
-                },
-                {
-                  num: '03',
-                  accent: '#F59E0B',
-                  title: 'Groups for any reason',
-                  body: 'Planning a campus cricket tournament? A group study session? Let multiple students join one shared conversation — up to 50 members per group.',
-                  tag: 'Up to 50 students per group',
-                },
-              ].map((row, i) => (
-                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 1fr 1fr', gap:'2rem', padding:'2.5rem 0', borderBottom:'1px solid #F1F5F9', alignItems:'center' }} className="vision-row">
-                  <span style={{ fontFamily:'Inter, sans-serif', fontSize:'clamp(2rem,3vw,2.8rem)', fontWeight:900, color:'#F1F5F9', letterSpacing:'-0.04em', lineHeight:1 }}>{row.num}</span>
-                  <h3 style={{ fontFamily:'Inter, sans-serif', fontSize:'clamp(1.1rem,1.8vw,1.4rem)', fontWeight:700, color:'#060C20', margin:0, letterSpacing:'-0.02em' }}>{row.title}</h3>
-                  <div>
-                    <p style={{ color:'#64748B', fontSize:'0.95rem', lineHeight:1.7, margin:'0 0 0.75rem' }}>{row.body}</p>
-                    <span style={{ fontSize:'11px', fontWeight:700, color:row.accent, letterSpacing:'0.05em', textTransform:'uppercase', display:'inline-flex', alignItems:'center', gap:4 }}>
-                      <span style={{ width:6, height:6, borderRadius:'50%', background:row.accent, display:'inline-block' }} />
-                      {row.tag}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Quote strip */}
-            <div className="fade-up" style={{ marginTop:'4rem', padding:'2.5rem 3rem', background:'#060C20', borderRadius:'1.25rem', position:'relative', overflow:'hidden' }}>
-              <div style={{ position:'absolute', top:0, left:0, right:0, height:'2px', background:'linear-gradient(90deg, #635BFF, #EC4899, #635BFF)', backgroundSize:'200% 100%', animation:'brand-shimmer 3s linear infinite' }} />
-              <p style={{ fontFamily:"'Merriweather', Georgia, serif", fontSize:'clamp(1.1rem,2vw,1.5rem)', color:'#fff', lineHeight:1.6, margin:0, fontWeight:700, maxWidth:'780px' }}>
-                "Not just a marketplace — a campus operating system{' '}
-                <span style={{ color:'#A78BFA' }}>where every student is both a provider and a seeker.</span>"
+        <section className="bg-white py-24 border-t border-stripe-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="fade-up visible mb-16 max-w-3xl">
+              <span className="text-sm font-medium text-stripe-purple block mb-3">What Cosen is</span>
+              <h2 className="font-sans text-3xl sm:text-4xl font-semibold text-slate-900 mb-5 leading-tight">
+                We don't sell services. <span className="text-stripe-purple">We connect people.</span>
+              </h2>
+              <p className="text-slate-600 text-lg leading-relaxed font-sans">
+                Cosen is a living campus network where every student is both a seeker and a provider. Tutoring, design, food, anonymous matches, group chats. One place for every campus need.
               </p>
+            </div>
+
+            {/* Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              
+              {/* 1. Tech Help (Span 2) */}
+              <div className="md:col-span-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl overflow-hidden flex flex-col sm:flex-row group transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+                <div className="p-8 sm:p-10 flex-1 flex flex-col justify-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] rounded-md text-xs font-medium mb-5 w-fit">
+                    Web • App • Debug
+                  </div>
+                  <h3 className="font-sans text-2xl font-semibold text-slate-900 mb-3 leading-snug">Code smarter. Build faster.</h3>
+                  <p className="text-slate-600 text-[15px] leading-relaxed max-w-md font-sans">
+                    Need a bug fixed or a complete application built? Connect with skilled campus developers for on-demand technical and data support.
+                  </p>
+                </div>
+                <div className="flex-1 bg-[#F1F5F9] flex items-center justify-center p-6 relative overflow-hidden">
+                  <img src={imgTech} alt="Tech help" className="w-[110%] max-w-[320px] object-contain drop-shadow-xl group-hover:scale-[1.02] transition-transform duration-500 ease-out" />
+                </div>
+              </div>
+
+              {/* 2. Anonymous connections (Span 1) */}
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+                <div className="p-8 sm:p-8 pb-0">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] rounded-md text-xs font-medium mb-5 w-fit">
+                    SendiYou
+                  </div>
+                  <h3 className="font-sans text-xl font-semibold text-slate-900 mb-3 leading-snug">Connect. Share. Reveal. Safely.</h3>
+                  <p className="text-slate-600 text-[14px] leading-relaxed mb-6 font-sans">
+                    Reach out to a fellow student without showing your identity. Both parties choose if and when to reveal.
+                  </p>
+                </div>
+                <div className="mt-auto bg-[#0F172A] flex items-end justify-center p-6 pt-0 relative overflow-hidden h-[180px]">
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10" />
+                  <img src={imgSendiYou} alt="SendiYou" className="absolute w-[120%] object-cover opacity-90 group-hover:scale-[1.02] transition-transform duration-500 ease-out z-0" />
+                </div>
+              </div>
+
+              {/* 3. Groups for any reason (Span 1) */}
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+                <div className="p-8 sm:p-8 pb-0">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] rounded-md text-xs font-medium mb-5 w-fit">
+                    Playground
+                  </div>
+                  <h3 className="font-sans text-xl font-semibold text-slate-900 mb-3 leading-snug">Challenge. Compete. Win.</h3>
+                  <p className="text-slate-600 text-[14px] leading-relaxed mb-6 font-sans">
+                    Looking for a gaming squad or a sports team? Organize tournaments and find teammates on campus.
+                  </p>
+                </div>
+                <div className="mt-auto bg-[#0F172A] flex items-end justify-center p-6 pt-0 relative overflow-hidden h-[180px]">
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent z-10" />
+                  <img src={imgPlayground} alt="Groups" className="absolute w-[140%] object-cover group-hover:-translate-y-1 transition-transform duration-500 ease-out z-0" />
+                </div>
+              </div>
+
+              {/* 4. Study Helper (Span 2) */}
+              <div className="md:col-span-2 lg:col-span-2 bg-[#0F172A] border border-[#1E293B] rounded-2xl overflow-hidden flex flex-col sm:flex-row-reverse group transition-all duration-300 shadow-lg relative hover:-translate-y-0.5">
+                <div className="p-8 sm:p-10 flex-1 flex flex-col justify-center relative z-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1E293B] text-[#94A3B8] border border-[#334155] rounded-md text-xs font-medium mb-5 w-fit">
+                    Study Helper
+                  </div>
+                  <h3 className="font-sans text-2xl sm:text-3xl font-semibold text-white mb-4 leading-snug">
+                    Peer tutoring. Campus rates. Real results.
+                  </h3>
+                  <p className="text-slate-400 text-[15px] leading-relaxed max-w-sm font-sans">
+                    Struggling with a tough assignment? Find verified student tutors who have already aced the course.
+                  </p>
+                </div>
+                <div className="flex-1 bg-[#020617] flex items-center justify-center relative z-10 overflow-hidden">
+                  <img src={imgStudy} alt="Study Helper" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-[1.02] group-hover:opacity-90 transition-all duration-500 ease-out" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0F172A] via-transparent to-transparent hidden sm:block"></div>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
@@ -372,11 +400,11 @@ export default function Landing() {
               <div>
                 <span style={{ fontSize:'11px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'#635BFF', display:'block', marginBottom:'1.5rem' }}>How it works</span>
                 <h2 style={{ fontFamily:'Inter, sans-serif', fontSize:'clamp(2rem,4vw,3.2rem)', fontWeight:900, color:'#fff', lineHeight:1.1, letterSpacing:'-0.03em', margin:'0 0 1.5rem' }}>
-                  From need to<br />connection —<br />
+                  From need to<br />connection<br />
                   <span style={{ color:'#635BFF' }}>in minutes.</span>
                 </h2>
                 <p style={{ color:'rgba(255,255,255,0.45)', fontSize:'1rem', lineHeight:1.7, margin:'0 0 2.5rem', maxWidth:'380px' }}>
-                  Whether you need a tutor, a campus friend, or a group for your next tournament — Cosen finds your match.
+                  Whether you need a tutor, a campus friend, or a group for your next tournament, Cosen finds your match.
                 </p>
                 <Link to="/signup" style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#635BFF', color:'#fff', fontWeight:600, fontSize:'13px', padding:'11px 24px', borderRadius:'100px', textDecoration:'none', transition:'background .2s' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#4F3EFF'}
@@ -439,14 +467,14 @@ export default function Landing() {
                   accent: '#635BFF',
                   icon: <Code style={{ width:20, height:20, color:'#635BFF' }} />,
                   title: 'Skill Connections',
-                  body: 'Post what you need — someone on campus can do it. Tutoring, design, code, food, events.',
+                  body: 'Post what you need, someone on campus can do it. Tutoring, design, code, food, events.',
                   tags: ['Tutoring', 'Coding', 'Design', 'Photography'],
                   link: '/browse',
                 },
                 {
                   accent: '#EC4899',
                   icon: <Lock style={{ width:20, height:20, color:'#EC4899' }} />,
-                  title: 'SendiYou — Anonymous',
+                  title: 'SendiYou: Anonymous',
                   body: 'Connect with a student anonymously. Reveal your identity only when you both agree. Campus-safe, consent-first.',
                   tags: ['Anonymous', 'Gender filter', '7-day chat'],
                   link: '/signup',
@@ -456,7 +484,7 @@ export default function Landing() {
                   accent: '#F59E0B',
                   icon: <Users style={{ width:20, height:20, color:'#F59E0B' }} />,
                   title: 'Group Connections',
-                  body: 'One post, up to 50 students. Group study, cricket team, club event — all in a shared chat.',
+                  body: 'One post, up to 50 students. Group study, cricket team, club event all in a shared chat.',
                   tags: ['Sports', 'Study groups', 'Club events'],
                   link: '/browse',
                 },
@@ -619,8 +647,8 @@ export default function Landing() {
           <h2 style={{ fontFamily:'Inter, sans-serif', fontSize:'clamp(2rem,5vw,3.5rem)', fontWeight:900, color:'#fff', lineHeight:1.1, letterSpacing:'-0.03em', margin:'0 0 1.25rem' }}>
             Your next connection<br />is already on campus.
           </h2>
-          <p style={{ color:'rgba(255,255,255,0.50)', fontSize:'1.05rem', lineHeight:1.7, margin:'0 0 2.5rem', maxWidth:'480px', marginLeft:'auto', marginRight:'auto' }}>
-            Hundreds of students are sharing skills, finding matches, and building connections on Cosen — right now.
+          <p style={{ color:'#828F9E', fontSize:'clamp(1rem,2vw,1.1rem)', maxWidth:'600px', margin:'0 auto 2.5rem', lineHeight:1.7 }}>
+            Hundreds of students are sharing skills, finding matches, and building connections on Cosen right now.
           </p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:12, justifyContent:'center', marginBottom:'2.5rem' }}>
             <Link to="/signup" id="cta-banner-join" style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#635BFF', color:'#fff', fontWeight:700, fontSize:'14px', padding:'13px 28px', borderRadius:'100px', textDecoration:'none', transition:'background .2s', boxShadow:'0 4px 20px rgba(99,91,255,0.35)' }}
@@ -647,39 +675,7 @@ export default function Landing() {
       {/* ═══════════════════════════════════════════════════════
           FOOTER
       ═══════════════════════════════════════════════════════ */}
-      <footer style={{ background:'#F8FAFC', borderTop:'1px solid #F1F5F9', padding:'3rem clamp(1.5rem,6vw,5rem)' }}>
-        <div style={{ maxWidth:'1200px', margin:'0 auto', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:'1.5rem' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <BrandLogo size="sm" />
-            <span style={{ color:'#94A3B8', fontSize:'13px' }}>© 2025 Cosen</span>
-          </div>
-          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'2rem', marginTop: '1rem' }}>
-            <nav style={{ display:'flex', flexWrap:'wrap', gap:'1rem 2rem' }}>
-              {[['Browse', '/browse'], ['Post a Service', '/services/new'], ['Sign Up', '/signup'], ['Login', '/login'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms & Conditions', '/terms'], ['Refund Policy', '/refund']].map(([label, href]) => (
-                <Link key={label} to={href} style={{ color:'#64748B', fontSize:'13px', textDecoration:'none', fontWeight:500, transition:'color .2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#635BFF'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#64748B'}
-                >{label}</Link>
-              ))}
-            </nav>
-            <div style={{ display:'flex', alignItems:'center', gap:'1.25rem' }}>
-              <a href="mailto:cosen.hub@gmail.com" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s', display:'flex', alignItems:'center', gap:'0.5rem', textDecoration:'none' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="Email">
-                <Mail className="h-4 w-4" />
-                <span style={{ fontSize:'13px', fontWeight:500 }}>cosen.hub@gmail.com</span>
-              </a>
-              <a href="https://www.instagram.com/cosen.hub?igsh=YmpiOTh4aWlxMjg3" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="Instagram">
-                <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-              </a>
-              <a href="https://www.linkedin.com/in/ankit-rajput-7969b0224?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="LinkedIn">
-                <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
-              </a>
-              <a href="https://whatsapp.com/channel/0029Va4dI6XKmCPJ1lc5Pa0L" target="_blank" rel="noopener noreferrer" style={{ color:'#64748B', transition:'color .2s' }} onMouseEnter={e => e.currentTarget.style.color = '#635BFF'} onMouseLeave={e => e.currentTarget.style.color = '#64748B'} title="WhatsApp">
-                <MessageCircle className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Responsive helper styles */}
       <style>{`
