@@ -244,7 +244,7 @@ export default function Timetable() {
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC' }}>
       {/* Header */}
-      <div style={{ background: '#060C20', padding: '2.5rem clamp(1rem,5vw,4rem) 2rem' }}>
+      <div style={{ background: '#060C20', padding: '2.5rem clamp(1rem,5vw,4rem) 2rem', paddingTop: 'calc(64px + 2rem)' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(99,91,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
