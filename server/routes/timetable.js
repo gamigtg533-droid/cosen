@@ -34,7 +34,8 @@ router.get('/buildings', protect, async (req, res) => {
     const { data, error } = await supabase
       .from('timetable_slots')
       .select('building')
-      .neq('building', null);
+      .neq('building', null)
+      .limit(10000);
 
     if (error) throw error;
 
@@ -68,7 +69,8 @@ router.get('/rooms', protect, async (req, res) => {
       .eq('building', building)
       .eq('day', dayUpper)
       .order('room')
-      .order('start_time');
+      .order('start_time')
+      .limit(10000);
 
     if (error) throw error;
 
@@ -76,7 +78,8 @@ router.get('/rooms', protect, async (req, res) => {
     const { data: allRoomData } = await supabase
       .from('timetable_slots')
       .select('room')
-      .eq('building', building);
+      .eq('building', building)
+      .limit(10000);
 
     const allRooms = [...new Set((allRoomData || []).map(r => r.room))].sort();
 
