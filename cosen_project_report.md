@@ -600,3 +600,39 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 ---
 
 *Last updated: June 2, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
+
+---
+
+### June 21-22, 2026 — Timetable Detector, Razorpay Compliance & UI Polish
+**Objective**: Introduce a new "Free Room Finder" utility for students, realign the landing page for payment gateway compliance, and smooth out the onboarding and dashboard experience.
+
+#### 1. Landing Page Compliance (Razorpay)
+- **Problem**: The landing page messaging felt too much like a dating or social network ("We find the match", "campus friend"), which violated Razorpay's compliance policies for a service marketplace.
+- **Solution**: Rewrote the entire `Landing.jsx` copy to clearly position Cosen as a peer-to-peer service marketplace. Emphasized "Hire peers", "Freelance services", and "Secure escrow payments".
+- **Category Reordering**: De-emphasized the `SendiYou` (anonymous connections) feature by moving it to the last position in the category grid and stripping out the prominent "215+" user count to keep the focus on professional/academic services.
+
+#### 2. Timetable Detector (Free Room Finder)
+- **Concept**: A brand new utility allowing students to select a campus building and instantly see which classrooms are free, occupied, or about to be busy.
+- **Backend Architecture**:
+  - Created new Supabase tables `timetable_slots` and `timetable_meta` via SQL migration.
+  - Built an Admin Panel UI (`AdminTimetable.jsx`) to securely upload the master `PPSU_SOE_Master_Timetable.xlsx`.
+  - Implemented an Express backend route utilizing `multer` and `xlsx` to parse the Excel file, extract core fields (Program, Class Code, Subject, Room, Building, Time), and bulk-insert them into Supabase.
+- **Frontend UI (`Timetable.jsx`)**:
+  - Built a dynamic UI showing real-time classroom statuses with visual indicators (Free Now, Busy Soon, In Use).
+  - Designed an empty-state warning guide for when the database has no timetable uploaded yet.
+  - Handled a UI bug where the global Navbar overlapped and hid the Timetable page header by applying correct padding offsets.
+- **Bypassing API Limits (Critical Fix)**: 
+  - Diagnosed a bug where Supabase's PostgREST default hard limit truncated the building list at 1,000 rows (omitting Block G, H, I, and Music Room).
+  - Engineered a `.range()` pagination `while` loop on the backend to dynamically fetch all timetable rows in 1000-row chunks, ensuring 100% data retrieval.
+
+#### 3. Onboarding Friction Removed
+- **Problem**: New users were getting permanently stuck in the onboarding flow because Step 2 enforced mandatory Phone Number / WhatsApp OTP verification.
+- **Solution**: Refactored `Onboarding.jsx` to make phone verification explicitly **Optional**. Users can now seamlessly click "Complete Profile" and reach the Dashboard without verifying a phone number.
+
+#### 4. Dashboard "Dummy Data" Cleanup
+- **Problem**: The `Dashboard.jsx` displayed hardcoded visual placeholders (e.g., ₹5,476 for Weekly Expenses, ₹9,800 for Earnings, 1,009 Total Orders) when real data was 0, confusing new users.
+- **Solution**: Scrapped all fallback placeholder strings and hardcoded graph values. The dashboard now properly defaults to ₹0 and flat charts for brand-new users, accurately reflecting their real platform activity.
+
+---
+
+*Last updated: June 22, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
