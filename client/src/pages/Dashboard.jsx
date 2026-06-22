@@ -253,25 +253,25 @@ export default function Dashboard() {
 
   const statsCards = [
     {
-      label: 'Total Earnings', value: `₹${(totalEarnings || (orders.length ? 0 : 9800)).toLocaleString('en-IN')}`,
+      label: 'Total Earnings', value: `₹${(totalEarnings || 0).toLocaleString('en-IN')}`,
       sub: timeRange === 'all' ? 'Lifetime' : 'vs Previous', subLabel: 'Trend', up: true, icon: IndianRupee, color: '#635BFF',
     },
     {
-      label: 'Total Orders', value: filteredOrders.length || (orders.length ? 0 : 1009),
+      label: 'Total Orders', value: filteredOrders.length,
       sub: timeRange === 'all' ? 'Lifetime' : 'vs Previous', subLabel: 'Trend', up: true, icon: ShoppingBag, color: '#00D4AA',
     },
     {
-      label: 'Completed', value: completedOrders || (orders.length ? 0 : 1231),
+      label: 'Completed', value: completedOrders,
       sub: timeRange === 'all' ? 'Lifetime' : 'vs Previous', subLabel: 'Trend', up: false, icon: Package, color: '#FF9F43',
     },
     {
-      label: 'Services Posted', value: myServices.length || (orders.length ? 0 : 4),
+      label: 'Services Posted', value: myServices.length,
       sub: 'All Time', subLabel: 'Total', up: true, icon: Zap, color: '#FF6B9D',
     },
   ];
 
-  const financeData = [42, 55, 38, 70, 50, 90, 65, 110, 80, 95, 60, 120];
-  const weeklySpend = totalSpent || 5476;
+  const financeData = totalEarnings > 0 ? [42, 55, 38, 70, 50, 90, 65, 110, 80, 95, 60, 120] : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const weeklySpend = totalSpent || 0;
   const maxSpend = 10000;
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -362,7 +362,7 @@ export default function Dashboard() {
             <div className="relative">
               {/* Tooltip */}
               <div className="absolute right-8 top-2 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg z-10">
-                ₹{(totalEarnings || 4100).toLocaleString('en-IN')}
+                ₹{(totalEarnings || 0).toLocaleString('en-IN')}
                 <div className="text-[10px] font-normal opacity-80">Revenue from orders</div>
               </div>
               <MiniLineChart data={financeData} color="#22c55e" height={110} />
