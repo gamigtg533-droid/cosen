@@ -31,15 +31,25 @@ function timeToMinutes(t) {
 // ─────────────────────────────────────────────────────────────
 router.get('/buildings', protect, async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('timetable_slots')
-      .select('building')
-      .neq('building', null)
-      .limit(10000);
+    let allBuildingsData = [];
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('timetable_slots')
+        .select('building')
+        .neq('building', null)
+        .range(from, from + step - 1);
+      
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      
+      allBuildingsData = allBuildingsData.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
 
-    if (error) throw error;
-
-    const buildings = [...new Set((data || []).map(r => r.building))].filter(Boolean).sort();
+    const buildings = [...new Set(allBuildingsData.map(r => r.building))].filter(Boolean).sort();
     res.json({ success: true, buildings });
   } catch (err) {
     console.error('[Timetable] buildings error:', err);
@@ -75,13 +85,25 @@ router.get('/rooms', protect, async (req, res) => {
     if (error) throw error;
 
     // Also fetch all rooms in this building (across all days) to include rooms with no Monday class etc.
-    const { data: allRoomData } = await supabase
-      .from('timetable_slots')
-      .select('room')
-      .eq('building', building)
-      .limit(10000);
+    let allRoomData = [];
+    let roomFrom = 0;
+    const roomStep = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('timetable_slots')
+        .select('room')
+        .eq('building', building)
+        .range(roomFrom, roomFrom + roomStep - 1);
+        
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      
+      allRoomData = allRoomData.concat(data);
+      if (data.length < roomStep) break;
+      roomFrom += roomStep;
+    }
 
-    const allRooms = [...new Set((allRoomData || []).map(r => r.room))].sort();
+    const allRooms = [...new Set(allRoomData.map(r => r.room))].sort();
 
     // Group slots by room
     const byRoom = {};
