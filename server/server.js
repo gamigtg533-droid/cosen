@@ -17,6 +17,7 @@ const allowedOrigins = [
   // Production frontend
   'https://cosen.online',
   'https://www.cosen.online',
+  'https://api.cosen.online',
 ];
 
 // Support a comma-separated CLIENT_URL env variable for extra origins
