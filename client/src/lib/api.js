@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-let BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// In production, always use the real backend URL.
+// In local dev, Vite's proxy handles /api → localhost:5000.
+const isProd = import.meta.env.PROD; // true when built with `vite build`
+let BASE_URL = import.meta.env.VITE_API_URL
+  || (isProd ? 'https://api.cosen.online/api' : '/api');
+
+// Ensure /api suffix
 if (BASE_URL !== '/api' && !BASE_URL.endsWith('/api')) {
   BASE_URL = BASE_URL.replace(/\/+$/, '') + '/api';
 }
