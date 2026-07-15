@@ -33,8 +33,6 @@ import AdminServices from './pages/admin/AdminServices';
 import AdminPayouts from './pages/admin/AdminPayouts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminBanners from './pages/admin/AdminBanners';
-import AdminTimetable from './pages/admin/AdminTimetable';
-import Timetable from './pages/Timetable';
  
 function TitleUpdater() {
   const location = useLocation();
@@ -57,7 +55,6 @@ function TitleUpdater() {
     else if (path === '/onboarding') title = 'Complete Profile | Cosen';
     else if (path === '/verify-email') title = 'Verify Email | Cosen';
     else if (path === '/forgot-password' || path.startsWith('/reset-password')) title = 'Reset Password | Cosen';
-    else if (path === '/timetable') title = 'Free Room Finder | Cosen';
     else if (path.startsWith('/admin')) title = 'Admin Panel | Cosen';
  
     document.title = title;
@@ -85,7 +82,6 @@ function App() {
                 <Route path="payouts" element={<AdminPayouts />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="banners" element={<AdminBanners />} />
-                <Route path="timetable" element={<AdminTimetable />} />
               </Routes>
             </AdminLayout>
           </AdminRoute>
@@ -119,7 +115,6 @@ function App() {
                   <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                   <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
                   <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-                  <Route path="/timetable" element={<ProtectedRoute><Timetable /></ProtectedRoute>} />
                 </Routes>
               </main>
             </div>

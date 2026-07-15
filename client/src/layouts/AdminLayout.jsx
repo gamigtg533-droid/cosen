@@ -17,7 +17,6 @@ const NAV_ITEMS = [
   { to: '/admin/services', icon: Package, label: 'Services', badge: null },
   { to: '/admin/payouts', icon: IndianRupee, label: 'Payouts', badgeKey: 'pendingPayouts' },
   { to: '/admin/banners', icon: Image, label: 'Banners', badge: null },
-  { to: '/admin/timetable', icon: CalendarDays, label: 'Timetable', badge: null },
 ];
 
 export default function AdminLayout({ children }) {

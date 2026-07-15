@@ -606,7 +606,7 @@ export default function OrderDetail() {
                   <span className="text-stripe-muted">Item price</span>
                   <span className="font-medium text-stripe-slate">₹{order.price?.toLocaleString()}</span>
                 </div>
-                {!isBuyer && order.paymentMethod !== 'manual' && (
+                {!isBuyer && order.paymentMethod === 'razorpay' && order.status !== 'pending_negotiation' && (
                   <div className="flex justify-between text-sm">
                     <span className="text-stripe-muted">Platform fee</span>
                     <span className="font-medium text-stripe-slate">- ₹{order.platformFee?.toLocaleString()}</span>
@@ -614,7 +614,7 @@ export default function OrderDetail() {
                 )}
                 <div className="border-t border-stripe-border pt-3 flex justify-between font-bold text-stripe-slate">
                   <span>{isBuyer ? 'Total Paid' : 'Net Earnings'}</span>
-                  <span>₹{(isBuyer ? order.price : (order.paymentMethod === 'manual' ? order.price : order.sellerEarnings))?.toLocaleString()}</span>
+                  <span>₹{(isBuyer ? order.price : (order.paymentMethod === 'manual' || order.status === 'pending_negotiation' ? order.price : order.sellerEarnings))?.toLocaleString()}</span>
                 </div>
               </div>
 

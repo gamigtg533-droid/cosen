@@ -469,9 +469,9 @@ export default function Navbar() {
                           </span>
                         )}
                       </Link>
-                      <Link to="/timetable" className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-stripe-slate hover:bg-stripe-bg transition-colors">
+                      <a href="https://timbel.cosen.online" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-stripe-slate hover:bg-stripe-bg transition-colors">
                         <CalendarDays className="h-4 w-4 text-stripe-purple" /> Free Room Finder
-                      </Link>
+                      </a>
                       <div style={{ borderTop: '1px solid #E6EBF1' }}>
                         <button
                           id="nav-logout"
@@ -600,11 +600,11 @@ export default function Navbar() {
             Messages
           </Link>
 
-          <Link to="/timetable" id="mobile-nav-timetable" onClick={() => setMobileOpen(false)}
+          <a href="https://timbel.cosen.online" target="_blank" rel="noopener noreferrer" id="mobile-nav-timetable" onClick={() => setMobileOpen(false)}
             className="flex items-center gap-2 px-3 py-3 rounded-xl font-semibold text-sm"
-            style={{ color: location.pathname === '/timetable' ? '#635BFF' : '#425466', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            style={{ color: '#425466', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
             <CalendarDays className="h-4 w-4" /> Free Room Finder
-          </Link>
+          </a>
 
           <Link to="/profile" id="mobile-nav-profile" onClick={() => setMobileOpen(false)}
             className="flex items-center gap-2 px-3 py-3 rounded-xl font-semibold text-sm"
