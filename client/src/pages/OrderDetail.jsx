@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
   Send, Loader, Clock, CheckCircle, AlertTriangle,
-  Shield, Check, Info, MessageCircle, Star, Trophy, Heart, Eye, EyeOff, Timer
+  Shield, Check, Info, MessageCircle, Star, Trophy, Heart, Eye, EyeOff, Timer, ChevronRight
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useRazorpay from '../hooks/useRazorpay';
@@ -43,6 +43,7 @@ export default function OrderDetail() {
   const [updatingPrice, setUpdatingPrice] = useState(false);
   const [priceSuccessMsg, setPriceSuccessMsg] = useState('');
   const [payLoading, setPayLoading] = useState(false);
+  const [manualPayLoading, setManualPayLoading] = useState(false);
   const openCheckout = useRazorpay();
 
   // SendiYou reveal state
@@ -605,7 +606,7 @@ export default function OrderDetail() {
                   <span className="text-stripe-muted">Item price</span>
                   <span className="font-medium text-stripe-slate">₹{order.price?.toLocaleString()}</span>
                 </div>
-                {!isBuyer && (
+                {!isBuyer && order.paymentMethod !== 'manual' && (
                   <div className="flex justify-between text-sm">
                     <span className="text-stripe-muted">Platform fee</span>
                     <span className="font-medium text-stripe-slate">- ₹{order.platformFee?.toLocaleString()}</span>
@@ -613,7 +614,7 @@ export default function OrderDetail() {
                 )}
                 <div className="border-t border-stripe-border pt-3 flex justify-between font-bold text-stripe-slate">
                   <span>{isBuyer ? 'Total Paid' : 'Net Earnings'}</span>
-                  <span>₹{(isBuyer ? order.price : order.sellerEarnings)?.toLocaleString()}</span>
+                  <span>₹{(isBuyer ? order.price : (order.paymentMethod === 'manual' ? order.price : order.sellerEarnings))?.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -656,13 +657,36 @@ export default function OrderDetail() {
                   {isBuyer ? (
                     <div className="text-sm text-amber-700">
                       <p className="mb-4">Discuss the requirements in the chat. The seller will set the final price here.</p>
-                      <button 
-                        onClick={handlePayPendingOrder}
-                        disabled={payLoading}
-                        className="w-full btn-primary !bg-amber-600 hover:!bg-amber-700 disabled:opacity-60"
-                      >
-                        {payLoading ? <Loader className="h-4 w-4 animate-spin mx-auto" /> : `Pay Agreed Amount (₹${order.price})`}
-                      </button>
+                      <div className="space-y-2">
+                        {/* Razorpay — Coming Soon */}
+                        <button disabled className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white/60 opacity-50 cursor-not-allowed">
+                          <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center shrink-0"><Shield className="h-4 w-4 text-slate-400" /></div>
+                          <div className="text-left flex-1">
+                            <div className="text-xs font-bold text-slate-400">Pay with Razorpay</div>
+                          </div>
+                          <span className="text-[8px] font-bold uppercase bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full border border-amber-200">Coming Soon</span>
+                        </button>
+                        {/* Manual UPI — Active */}
+                        <button
+                          onClick={async () => {
+                            setManualPayLoading(true);
+                            try {
+                              await api.put(`/orders/${id}/choose-manual-payment`);
+                              const orderRes = await api.get(`/orders/${id}`);
+                              setOrder(orderRes.data.order);
+                            } catch (err) { alert(err.response?.data?.message || 'Failed to select manual payment.'); }
+                            finally { setManualPayLoading(false); }
+                          }}
+                          disabled={manualPayLoading}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-amber-400/60 bg-amber-100/40 hover:bg-amber-100 transition-all disabled:opacity-60 group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-amber-200/60 flex items-center justify-center shrink-0"><span className="text-base">📱</span></div>
+                          <div className="text-left flex-1">
+                            <div className="text-xs font-bold text-amber-800">Pay Manually via UPI (₹{order.price})</div>
+                          </div>
+                          {manualPayLoading ? <Loader className="h-4 w-4 animate-spin text-amber-600" /> : <ChevronRight className="h-4 w-4 text-amber-600" />}
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-sm text-amber-700">
@@ -693,6 +717,156 @@ export default function OrderDetail() {
                           {priceSuccessMsg}
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Manual Payment Handshake Panel ── */}
+              {order.paymentMethod === 'manual' && order.manualPaymentStatus && !['completed', 'disputed', 'cancelled'].includes(order.status) && (
+                <div className="mb-6 p-4 rounded-xl border-2 border-stripe-purple/30 bg-stripe-purple/5">
+                  <h4 className="font-bold text-stripe-slate mb-3 flex items-center gap-1.5 text-sm">
+                    <span className="text-base">📱</span> Manual UPI Payment
+                  </h4>
+
+                  {/* STATE: awaiting_payment — Buyer sees UPI details */}
+                  {order.manualPaymentStatus === 'awaiting_payment' && isBuyer && (
+                    <div className="space-y-3">
+                      <div className="bg-white p-3.5 rounded-xl border border-stripe-border">
+                        <div className="text-[10px] font-bold text-stripe-muted uppercase tracking-wider mb-2">Pay to Seller's UPI</div>
+                        {order.sellerUpiId ? (
+                          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <span className="font-mono font-bold text-stripe-slate text-sm">{order.sellerUpiId}</span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(order.sellerUpiId); }}
+                              className="text-[10px] font-bold text-stripe-purple bg-stripe-purple/10 px-2.5 py-1 rounded-md hover:bg-stripe-purple/20 transition-colors"
+                            >Copy</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2.5 text-xs">
+                            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                            Seller hasn't set up their UPI ID yet. Please ask them in chat.
+                          </div>
+                        )}
+                        <div className="mt-2.5 flex items-baseline gap-1">
+                          <span className="text-[10px] text-stripe-muted">Amount:</span>
+                          <span className="font-bold text-stripe-slate">₹{order.price?.toLocaleString()}</span>
+                        </div>
+                        <p className="text-[10px] text-stripe-muted mt-2 mb-3 leading-relaxed">Open any UPI app (GPay, PhonePe, Paytm) and send the amount to the above UPI ID.</p>
+                        
+                        {order.sellerUpiId && (
+                          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? (
+                            <a
+                              href={`upi://pay?pa=${order.sellerUpiId}&pn=${encodeURIComponent(order.seller?.name || 'Seller')}&am=${order.price}&cu=INR&tn=${encodeURIComponent(`Payment for order ${String(order._id || id).slice(-8)}`)}`}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-stripe-purple/30 bg-stripe-purple text-white text-xs font-bold shadow-md hover:bg-[#524ae3] hover:shadow-lg transition-all"
+                            >
+                              <span className="text-base">🚀</span> Pay Securely via UPI App
+                            </a>
+                          ) : (
+                            <button
+                              onClick={() => alert("Please switch to your mobile phone for manual UPI payment, or use the UPI ID to pay manually.")}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-stripe-purple/30 bg-stripe-purple text-white text-xs font-bold shadow-md hover:bg-[#524ae3] hover:shadow-lg transition-all"
+                            >
+                              <span className="text-base">🚀</span> Pay Securely via UPI App
+                            </button>
+                          )
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            setManualPayLoading(true);
+                            try {
+                              await api.put(`/orders/${id}/choose-manual-payment`);
+                              const orderRes = await api.get(`/orders/${id}`);
+                              setOrder(orderRes.data.order);
+                            } catch {} finally { setManualPayLoading(false); }
+                          }}
+                          className="flex-1 py-2.5 px-3 rounded-lg border-2 border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                        >Cancel Payment</button>
+                        <button
+                          onClick={async () => {
+                            setManualPayLoading(true);
+                            try {
+                              const { data } = await api.put(`/orders/${id}/buyer-claimed-paid`);
+                              if (data.success) setOrder(data.order);
+                            } catch (err) { alert(err.response?.data?.message || 'Failed.'); }
+                            finally { setManualPayLoading(false); }
+                          }}
+                          disabled={manualPayLoading}
+                          className="flex-1 py-2.5 px-3 rounded-lg border-2 border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                        >
+                          {manualPayLoading ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                          I Have Paid
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STATE: awaiting_payment — Seller sees waiting */}
+                  {order.manualPaymentStatus === 'awaiting_payment' && !isBuyer && (
+                    <div className="bg-white p-3.5 rounded-xl border border-stripe-border text-center space-y-2">
+                      <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-xl animate-pulse">⏳</div>
+                      <p className="text-xs font-semibold text-stripe-slate">Waiting for Buyer's Payment</p>
+                      <p className="text-[10px] text-stripe-muted">The buyer has been shown your UPI details. You'll be notified once they claim payment.</p>
+                    </div>
+                  )}
+
+                  {/* STATE: buyer_claimed_paid — Seller sees Working / Not Received */}
+                  {order.manualPaymentStatus === 'buyer_claimed_paid' && !isBuyer && (
+                    <div className="space-y-3">
+                      <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-center space-y-2">
+                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-xl">💰</div>
+                        <p className="text-xs font-bold text-amber-800">Buyer Claims They Have Paid</p>
+                        <p className="text-[10px] text-amber-700">₹{order.price?.toLocaleString()} via UPI. Please check your UPI app to verify.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            setManualPayLoading(true);
+                            try {
+                              const { data } = await api.put(`/orders/${id}/seller-reject-payment`);
+                              if (data.success) setOrder(data.order);
+                            } catch (err) { alert(err.response?.data?.message || 'Failed.'); }
+                            finally { setManualPayLoading(false); }
+                          }}
+                          disabled={manualPayLoading}
+                          className="flex-1 py-2.5 px-3 rounded-lg border-2 border-red-200 bg-red-50 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-60"
+                        >❌ Not Received</button>
+                        <button
+                          onClick={async () => {
+                            setManualPayLoading(true);
+                            try {
+                              const { data } = await api.put(`/orders/${id}/seller-confirm-payment`);
+                              if (data.success) setOrder(data.order);
+                            } catch (err) { alert(err.response?.data?.message || 'Failed.'); }
+                            finally { setManualPayLoading(false); }
+                          }}
+                          disabled={manualPayLoading}
+                          className="flex-1 py-2.5 px-3 rounded-lg border-2 border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                        >
+                          {manualPayLoading ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                          ✅ Working
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STATE: buyer_claimed_paid — Buyer sees waiting */}
+                  {order.manualPaymentStatus === 'buyer_claimed_paid' && isBuyer && (
+                    <div className="bg-white p-3.5 rounded-xl border border-stripe-border text-center space-y-2">
+                      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-xl animate-pulse">⏳</div>
+                      <p className="text-xs font-semibold text-stripe-slate">Waiting for Seller Verification</p>
+                      <p className="text-[10px] text-stripe-muted">You claimed payment of ₹{order.price?.toLocaleString()}. The seller is verifying receipt in their UPI app.</p>
+                    </div>
+                  )}
+
+                  {/* STATE: seller_confirmed — Both see success (order is now inProgress) */}
+                  {order.manualPaymentStatus === 'seller_confirmed' && (
+                    <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-center space-y-1.5">
+                      <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto" />
+                      <p className="text-xs font-bold text-emerald-800">Payment Confirmed ✓</p>
+                      <p className="text-[10px] text-emerald-700">Manual UPI payment of ₹{order.price?.toLocaleString()} verified. Order is now in progress!</p>
                     </div>
                   )}
                 </div>
@@ -800,9 +974,15 @@ export default function OrderDetail() {
                 {!isPlayground && ['pending', 'inProgress'].includes(order.status) && (
                   <div className="flex items-start gap-2 bg-stripe-purple/10 text-stripe-purple p-3 rounded-lg text-xs leading-relaxed">
                     <Shield className="h-4 w-4 shrink-0 mt-0.5" />
-                    {isBuyer
-                      ? 'Funds are held securely by Cosen. Released only when you approve.'
-                      : 'Funds are in escrow. Deliver the work to receive payment.'}
+                    {order.paymentMethod === 'manual' ? (
+                      isBuyer
+                        ? 'Payment made directly to seller via UPI. Please contact support in case of dispute.'
+                        : 'You received the payment directly via UPI. Please deliver the requested work.'
+                    ) : (
+                      isBuyer
+                        ? 'Funds are held securely by Cosen. Released only when you approve.'
+                        : 'Funds are in escrow. Deliver the work to receive payment.'
+                    )}
                   </div>
                 )}
 

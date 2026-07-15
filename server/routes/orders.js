@@ -142,6 +142,7 @@ const mapOrder = (row, currentUserId = null) => {
     department: seller.department,
     phone: seller.phone,
     isPhoneVerified: seller.is_phone_verified,
+    upiId: seller.upi_id || null,
   } : undefined;
 
   // Masking for SendiYou if NOT mutually revealed
@@ -257,6 +258,8 @@ const mapOrder = (row, currentUserId = null) => {
     buyerRevealed: !!order.buyer_revealed,
     sellerRevealed: !!order.seller_revealed,
     revealedIds: order.revealed_ids || [],
+    paymentMethod: order.payment_method || 'razorpay',
+    manualPaymentStatus: order.manual_payment_status || null,
     review: (review && review.length > 0) ? {
       rating: review[0].rating,
       comment: review[0].comment,
@@ -479,7 +482,7 @@ router.get('/:id', protect, async (req, res) => {
         *,
         service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
         buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
-        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, department, phone, is_phone_verified),
+        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, department, phone, is_phone_verified, upi_id),
         review:reviews(rating, comment, created_at)
       `)
       .eq('id', req.params.id)
@@ -505,6 +508,7 @@ router.get('/:id', protect, async (req, res) => {
     const mapped = mapOrder(order, req.user._id);
     if (mapped) {
       mapped.payout = payout;
+      mapped.sellerUpiId = order.seller?.upi_id || null;
     }
 
     res.status(200).json({ success: true, order: mapped });
@@ -957,6 +961,217 @@ router.put('/:id/vote-result', protect, async (req, res) => {
   } catch (error) {
     console.error('Vote match result error:', error);
     res.status(500).json({ success: false, message: 'Server error voting result' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/orders/:id/choose-manual-payment — buyer selects manual UPI payment
+// ─────────────────────────────────────────────────────────────
+router.put('/:id/choose-manual-payment', protect, async (req, res) => {
+  try {
+    const { data: order, error: fetchErr } = await supabase
+      .from('orders')
+      .select(`
+        id, buyer_id, seller_id, status, price, is_negotiable,
+        service:services!service_id(title),
+        seller:users!seller_id(id, name, upi_id)
+      `)
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr || !order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.buyer_id !== req.user._id) return res.status(403).json({ success: false, message: 'Only the buyer can choose payment method' });
+    if (!['pending', 'pending_negotiation'].includes(order.status)) return res.status(400).json({ success: false, message: 'Order is not in a payable state' });
+
+    const { data: updated, error } = await supabase
+      .from('orders')
+      .update({
+        payment_method: 'manual',
+        manual_payment_status: 'awaiting_payment',
+      })
+      .eq('id', req.params.id)
+      .select(`
+        *,
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
+        buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
+        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified, upi_id)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Notify seller
+    createNotification({
+      userId: order.seller_id,
+      type: 'order_placed',
+      title: '📱 Manual Payment Selected',
+      body: `Buyer chose to pay ₹${order.price} manually via UPI for "${order.service?.title || 'your service'}".`,
+      link: `/orders/${req.params.id}`,
+    });
+
+    const mapped = mapOrder(updated, req.user._id);
+    // Attach seller UPI for frontend display
+    mapped.sellerUpiId = updated.seller?.upi_id || null;
+    res.status(200).json({ success: true, order: mapped });
+  } catch (error) {
+    console.error('Choose manual payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/orders/:id/buyer-claimed-paid — buyer says they have paid
+// ─────────────────────────────────────────────────────────────
+router.put('/:id/buyer-claimed-paid', protect, async (req, res) => {
+  try {
+    const { data: order, error: fetchErr } = await supabase
+      .from('orders')
+      .select(`
+        id, buyer_id, seller_id, price, manual_payment_status,
+        service:services!service_id(title),
+        buyer:users!buyer_id(name)
+      `)
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr || !order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.buyer_id !== req.user._id) return res.status(403).json({ success: false, message: 'Only the buyer can claim payment' });
+    if (order.manual_payment_status !== 'awaiting_payment') return res.status(400).json({ success: false, message: 'Invalid payment state' });
+
+    const { data: updated, error } = await supabase
+      .from('orders')
+      .update({ manual_payment_status: 'buyer_claimed_paid' })
+      .eq('id', req.params.id)
+      .select(`
+        *,
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
+        buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
+        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified, upi_id)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Notify seller
+    createNotification({
+      userId: order.seller_id,
+      type: 'order_placed',
+      title: '💰 Payment Claimed',
+      body: `${order.buyer?.name || 'Buyer'} says they have paid ₹${order.price} via UPI. Please verify in your UPI app.`,
+      link: `/orders/${req.params.id}`,
+    });
+
+    const mapped = mapOrder(updated, req.user._id);
+    mapped.sellerUpiId = updated.seller?.upi_id || null;
+    res.status(200).json({ success: true, order: mapped });
+  } catch (error) {
+    console.error('Buyer claimed paid error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/orders/:id/seller-confirm-payment — seller confirms receipt
+// ─────────────────────────────────────────────────────────────
+router.put('/:id/seller-confirm-payment', protect, async (req, res) => {
+  try {
+    const { data: order, error: fetchErr } = await supabase
+      .from('orders')
+      .select(`
+        id, buyer_id, seller_id, price, manual_payment_status,
+        service:services!service_id(title),
+        seller:users!seller_id(name)
+      `)
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr || !order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.seller_id !== req.user._id) return res.status(403).json({ success: false, message: 'Only the seller can confirm payment' });
+    if (order.manual_payment_status !== 'buyer_claimed_paid') return res.status(400).json({ success: false, message: 'No pending payment claim to confirm' });
+
+    const { data: updated, error } = await supabase
+      .from('orders')
+      .update({
+        manual_payment_status: 'seller_confirmed',
+        status: 'inProgress',
+      })
+      .eq('id', req.params.id)
+      .select(`
+        *,
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
+        buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
+        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified, upi_id)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Notify buyer
+    createNotification({
+      userId: order.buyer_id,
+      type: 'order_placed',
+      title: '✅ Payment Confirmed!',
+      body: `${order.seller?.name || 'Seller'} has received your payment and is now working on your order.`,
+      link: `/orders/${req.params.id}`,
+    });
+
+    const mapped = mapOrder(updated, req.user._id);
+    mapped.sellerUpiId = updated.seller?.upi_id || null;
+    res.status(200).json({ success: true, order: mapped });
+  } catch (error) {
+    console.error('Seller confirm payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/orders/:id/seller-reject-payment — seller says not received
+// ─────────────────────────────────────────────────────────────
+router.put('/:id/seller-reject-payment', protect, async (req, res) => {
+  try {
+    const { data: order, error: fetchErr } = await supabase
+      .from('orders')
+      .select(`
+        id, buyer_id, seller_id, price, manual_payment_status,
+        service:services!service_id(title),
+        seller:users!seller_id(name)
+      `)
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr || !order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.seller_id !== req.user._id) return res.status(403).json({ success: false, message: 'Only the seller can reject payment' });
+    if (order.manual_payment_status !== 'buyer_claimed_paid') return res.status(400).json({ success: false, message: 'No pending payment claim to reject' });
+
+    const { data: updated, error } = await supabase
+      .from('orders')
+      .update({ manual_payment_status: 'awaiting_payment' })
+      .eq('id', req.params.id)
+      .select(`
+        *,
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
+        buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
+        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified, upi_id)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Notify buyer
+    createNotification({
+      userId: order.buyer_id,
+      type: 'order_placed',
+      title: '❌ Payment Not Received',
+      body: `${order.seller?.name || 'Seller'} hasn't received the payment yet. Please check your UPI app and try again.`,
+      link: `/orders/${req.params.id}`,
+    });
+
+    const mapped = mapOrder(updated, req.user._id);
+    mapped.sellerUpiId = updated.seller?.upi_id || null;
+    res.status(200).json({ success: true, order: mapped });
+  } catch (error) {
+    console.error('Seller reject payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

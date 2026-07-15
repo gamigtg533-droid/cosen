@@ -581,18 +581,70 @@ export default function ServiceDetail() {
                       {payLoading ? <><Loader className="h-4 w-4 animate-spin" /> Processing...</> : 'Request Service & Negotiate'}
                     </button>
                   ) : (
-                    <button
-                      id="service-order-now"
-                      onClick={handleOrderNow}
-                      disabled={payLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
-                      className="btn-primary w-full justify-center py-3.5 mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {payLoading
-                        ? <><Loader className="h-4 w-4 animate-spin" /> Processing...</>
-                        : <>Pay ₹{Number(service.price).toLocaleString('en-IN')} with Razorpay <ChevronRight className="h-4 w-4" /></>
-                      }
-                    </button>
+                    <div className="space-y-2.5 mb-3">
+                      {/* Option 1: Razorpay — Coming Soon */}
+                      <button
+                        disabled
+                        className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed relative"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center shrink-0">
+                          <Shield className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <div className="text-left flex-1">
+                          <div className="text-sm font-bold text-slate-400">Pay with Razorpay</div>
+                          <div className="text-[10px] text-slate-400">Secure automated payment</div>
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full border border-amber-200">
+                          Coming Soon
+                        </span>
+                      </button>
+
+                      {/* Option 2: Manual UPI — Active */}
+                      <button
+                        id="service-order-manual"
+                        onClick={async () => {
+                          if (!user) { navigate('/login'); return; }
+                          setPayLoading(true);
+                          setPayError('');
+                          try {
+                            // Create order first
+                            const { data } = await api.post('/orders', {
+                              serviceId: service._id || service.id,
+                              requirements: requirements.trim(),
+                            });
+                            if (data.success) {
+                              const orderId = data.order._id || data.order.id;
+                              // Then mark it as manual payment
+                              await api.put(`/orders/${orderId}/choose-manual-payment`);
+                              navigate(`/orders/${orderId}`);
+                            } else {
+                              setPayError(data.message || 'Could not create order.');
+                            }
+                          } catch (err) {
+                            setPayError(err.response?.data?.message || 'Failed to create order.');
+                          } finally {
+                            setPayLoading(false);
+                          }
+                        }}
+                        disabled={payLoading || (user && (user._id === service.sellerId || user.id === service.sellerId))}
+                        className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-stripe-purple/40 bg-stripe-purple/5 hover:bg-stripe-purple/10 hover:border-stripe-purple/60 transition-all disabled:opacity-60 disabled:cursor-not-allowed group"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-stripe-purple/15 flex items-center justify-center shrink-0 group-hover:bg-stripe-purple/25 transition-colors">
+                          <span className="text-lg">📱</span>
+                        </div>
+                        <div className="text-left flex-1">
+                          <div className="text-sm font-bold text-stripe-slate">Pay Manually via UPI</div>
+                          <div className="text-[10px] text-stripe-muted">Pay directly to seller's UPI ID</div>
+                        </div>
+                        {payLoading ? (
+                          <Loader className="h-4 w-4 animate-spin text-stripe-purple" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-stripe-purple opacity-60 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    </div>
                   )}
+
 
                   <button
                     id="service-contact"
