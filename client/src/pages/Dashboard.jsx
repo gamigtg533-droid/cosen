@@ -579,7 +579,6 @@ export default function Dashboard() {
                       );
                     })}
                   </div>
-                )}
               </>
             ) : (
               <div className="space-y-3 mt-2">
