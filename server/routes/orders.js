@@ -1020,6 +1020,45 @@ router.put('/:id/choose-manual-payment', protect, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// PUT /api/orders/:id/cancel-manual-payment — buyer cancels manual UPI payment
+// ─────────────────────────────────────────────────────────────
+router.put('/:id/cancel-manual-payment', protect, async (req, res) => {
+  try {
+    const { data: order, error: fetchErr } = await supabase
+      .from('orders')
+      .select('id, buyer_id, status')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr || !order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.buyer_id !== req.user._id) return res.status(403).json({ success: false, message: 'Only the buyer can cancel manual payment' });
+    if (!['pending', 'pending_negotiation'].includes(order.status)) return res.status(400).json({ success: false, message: 'Order is not in a payable state' });
+
+    const { data: updated, error } = await supabase
+      .from('orders')
+      .update({
+        payment_method: 'razorpay',
+        manual_payment_status: null,
+      })
+      .eq('id', req.params.id)
+      .select(`
+        *,
+        service:services!service_id(id, title, price, delivery_days, category, images, expires_at, preferred_gender, identity_hidden, display_name, accepted_by_id, group_size),
+        buyer:users!buyer_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified),
+        seller:users!seller_id(id, name, email, avatar_url, avatar_public_id, phone, is_phone_verified, upi_id)
+      `)
+      .single();
+
+    if (error) throw error;
+    
+    res.status(200).json({ success: true, order: mapOrder(updated, req.user._id) });
+  } catch (error) {
+    console.error('Cancel manual payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // PUT /api/orders/:id/buyer-claimed-paid — buyer says they have paid
 // ─────────────────────────────────────────────────────────────
 router.put('/:id/buyer-claimed-paid', protect, async (req, res) => {

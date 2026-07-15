@@ -777,12 +777,13 @@ export default function OrderDetail() {
                           onClick={async () => {
                             setManualPayLoading(true);
                             try {
-                              await api.put(`/orders/${id}/choose-manual-payment`);
-                              const orderRes = await api.get(`/orders/${id}`);
-                              setOrder(orderRes.data.order);
-                            } catch {} finally { setManualPayLoading(false); }
+                              const { data } = await api.put(`/orders/${id}/cancel-manual-payment`);
+                              if (data.success) setOrder(data.order);
+                            } catch (err) { alert(err.response?.data?.message || 'Failed to cancel.'); } 
+                            finally { setManualPayLoading(false); }
                           }}
-                          className="flex-1 py-2.5 px-3 rounded-lg border-2 border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                          disabled={manualPayLoading}
+                          className="flex-1 py-2.5 px-3 rounded-lg border-2 border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-60"
                         >Cancel Payment</button>
                         <button
                           onClick={async () => {
