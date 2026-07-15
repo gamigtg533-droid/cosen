@@ -636,3 +636,43 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 ---
 
 *Last updated: June 22, 2026 | GitHub: cosenhub07/cosen | Status: 🟢 Live in Production*
+
+---
+
+### July 14-15, 2026 — Manual UPI Payments, Timetable Decoupling & UI Enhancements
+**Objective**: Introduce a robust manual payment system to bypass Razorpay requirements, clean up the codebase by removing the timetable utility to a standalone project, and improve the loading UX on the dashboard.
+
+#### 1. Manual UPI Payment System (New Feature)
+- **Concept**: A complete alternative to Razorpay, allowing buyers and sellers to transact directly via UPI. Razorpay is now marked as "Coming Soon".
+- **Database Migration**: Added `payment_method` (default `'razorpay'`) and `manual_payment_status` to the `orders` table.
+- **Backend Handshake API (`orders.js`)**:
+  - `PUT /orders/:id/choose-manual-payment` — Buyer selects manual UPI payment.
+  - `PUT /orders/:id/buyer-claimed-paid` — Buyer claims they have paid.
+  - `PUT /orders/:id/seller-confirm-payment` — Seller confirms receipt → moves to `inProgress`.
+  - `PUT /orders/:id/seller-reject-payment` — Seller rejects → resets to `awaiting_payment`.
+- **Frontend UI Integration (`ServiceDetail.jsx`, `OrderDetail.jsx`)**: Built a full state-based handshake UI for both buyer and seller views.
+- **No Commission Rule**: Removed platform fee deductions and escrow warning notices for manual payments, showing exact net earnings for the seller.
+
+#### 2. UPI Deep Link Integration
+- **Implementation**: Added a **UPI deep link button** (`upi://pay?pa=...`) that automatically opens preferred UPI apps (GPay, PhonePe, Paytm, BHIM) on mobile devices with pre-filled details (Seller UPI, Name, Amount, Order Note).
+- **Responsive Fallback**: On desktop/laptop, the button shows an alert instructing users to switch to their mobile phone or use the displayed UPI ID manually.
+
+#### 3. Timetable Feature Decoupled & Removed
+- **Concept**: The "Free Room Finder" / Timetable feature was completely removed from the Cosen codebase and moved to a separate standalone project at `timbel.cosen.online`.
+- **Cleanup execution**:
+  - Deleted `Timetable.jsx`, `AdminTimetable.jsx`, `routes/timetable.js`, and `timetable_migration.sql`.
+  - Removed API registration from `server.js` and React Router routes from `App.jsx`.
+  - **Result**: Removed 1,229 lines of code, streamlining the marketplace architecture.
+- **Navigation Update**: Replaced internal router links in `Navbar.jsx` with external `<a>` tags pointing directly to the new Timbel domain.
+
+#### 4. Dashboard Skeleton Loader (UI Polish)
+- **Problem**: The dashboard displayed a basic `LottieLoader` spinner during data fetches.
+- **Solution**: Replaced the spinner with a **premium skeleton shimmer loader** mimicking the exact layout of the Dashboard content (Stat Cards, Gauge Chart, Line Chart, Transactions Table, and Calendar).
+- **Animation**: Implemented `@keyframes skeletonShimmer` with a smooth sliding `linear-gradient` to match top-tier enterprise UI standards (e.g., Stripe).
+
+#### 5. Bug Fixes
+- **ServiceDetail.jsx Blank Screen**: Fixed a crash occurring when a user clicked the "Request Service & Negotiate" button by correctly importing the missing `ChevronRight` lucide icon.
+
+---
+
+*Last updated: July 15, 2026 | GitHub: gamigtg533-droid/cosen | Status: 🟢 Live in Production*
