@@ -312,18 +312,7 @@ export default function Dashboard() {
         {/* ── Skeleton Loader ── */}
         {loading ? (
           <>
-            <style>{`
-              @keyframes skeletonShimmer {
-                0% { background-position: -400px 0; }
-                100% { background-position: 400px 0; }
-              }
-              .skeleton-pulse {
-                background: linear-gradient(90deg, #e8ecf1 25%, #f3f6f9 37%, #e8ecf1 63%);
-                background-size: 800px 100%;
-                animation: skeletonShimmer 1.6s ease-in-out infinite;
-                border-radius: 8px;
-              }
-            `}</style>
+            <div className="space-y-6">
 
             {/* Skeleton: Stat Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -426,10 +415,11 @@ export default function Dashboard() {
                     <div key={j} className="skeleton-pulse h-8 w-8 mx-auto rounded-lg" />
                   ))}
                 </div>
-              </div>
             </div>
-          </>
-        ) : (
+          </div>
+          </div>
+        </>
+      ) : (
         <>
         {/* ── Row 1: Stat Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
