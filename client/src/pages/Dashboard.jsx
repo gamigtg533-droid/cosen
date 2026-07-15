@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/api';
-import LottieLoader from '../components/LottieLoader';
+
 
 const MOCK_ORDERS = [
   { _id: 'CS1092', service: { title: 'Python Tutoring & Debugging' }, seller: { name: 'Alex M.' }, price: 499, status: 'inProgress', createdAt: new Date() },
@@ -309,6 +309,128 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── Skeleton Loader ── */}
+        {loading ? (
+          <>
+            <style>{`
+              @keyframes skeletonShimmer {
+                0% { background-position: -400px 0; }
+                100% { background-position: 400px 0; }
+              }
+              .skeleton-pulse {
+                background: linear-gradient(90deg, #e8ecf1 25%, #f3f6f9 37%, #e8ecf1 63%);
+                background-size: 800px 100%;
+                animation: skeletonShimmer 1.6s ease-in-out infinite;
+                border-radius: 8px;
+              }
+            `}</style>
+
+            {/* Skeleton: Stat Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl border p-5" style={{ borderColor: '#E6EBF1' }}>
+                  <div className="skeleton-pulse h-3 w-24 mb-4" />
+                  <div className="skeleton-pulse h-7 w-28 mb-4" />
+                  <div className="flex items-center gap-2">
+                    <div className="skeleton-pulse h-5 w-16 rounded-full" />
+                    <div className="skeleton-pulse h-3 w-10" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Skeleton: Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+              {/* Skeleton: Gauge */}
+              <div className="bg-white rounded-2xl border p-6" style={{ borderColor: '#E6EBF1' }}>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="skeleton-pulse h-5 w-32" />
+                  <div className="skeleton-pulse h-5 w-24 rounded-full" />
+                </div>
+                <div className="flex justify-center mb-4">
+                  <div className="skeleton-pulse rounded-full" style={{ width: 180, height: 90 }} />
+                </div>
+                <div className="flex justify-center gap-5 mt-4">
+                  {[0, 1, 2, 3].map(j => (
+                    <div key={j} className="flex items-center gap-1.5">
+                      <div className="skeleton-pulse w-2.5 h-2.5 rounded-sm" />
+                      <div className="skeleton-pulse h-3 w-10" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Skeleton: Line Chart */}
+              <div className="bg-white rounded-2xl border p-6" style={{ borderColor: '#E6EBF1' }}>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="skeleton-pulse h-5 w-28" />
+                  <div className="skeleton-pulse h-5 w-24 rounded-full" />
+                </div>
+                <div className="skeleton-pulse w-full mb-3" style={{ height: 110, borderRadius: 12 }} />
+                <div className="flex justify-end">
+                  <div className="skeleton-pulse h-3 w-40" />
+                </div>
+              </div>
+            </div>
+
+            {/* Skeleton: Transactions + Calendar */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Skeleton: Transactions Table */}
+              <div className="lg:col-span-2 bg-white rounded-2xl border p-6" style={{ borderColor: '#E6EBF1' }}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="skeleton-pulse h-5 w-36" />
+                  <div className="flex gap-3">
+                    <div className="skeleton-pulse h-7 w-48 rounded-xl" />
+                    <div className="skeleton-pulse h-7 w-24 rounded-full" />
+                  </div>
+                </div>
+                {/* Skeleton: Table Header */}
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-2 pb-3 mb-3" style={{ borderBottom: '1px solid #E6EBF1' }}>
+                  {[0, 1, 2, 3].map(j => (
+                    <div key={j} className={`skeleton-pulse h-3 w-20 ${j === 2 ? 'hidden md:block' : ''}`} />
+                  ))}
+                </div>
+                {/* Skeleton: Table Rows */}
+                {[0, 1, 2, 3, 4].map(j => (
+                  <div key={j} className="grid grid-cols-3 md:grid-cols-4 gap-2 py-4" style={{ borderBottom: '1px solid #F0F4F8' }}>
+                    <div>
+                      <div className="skeleton-pulse h-3 w-16 mb-2" />
+                      <div className="skeleton-pulse h-2.5 w-10" />
+                    </div>
+                    <div>
+                      <div className="skeleton-pulse h-3 w-32 mb-2" />
+                      <div className="skeleton-pulse h-2.5 w-20" />
+                    </div>
+                    <div className="hidden md:block">
+                      <div className="skeleton-pulse h-3 w-16" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="skeleton-pulse h-4 w-14" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Skeleton: Calendar */}
+              <div className="bg-white rounded-2xl border p-6" style={{ borderColor: '#E6EBF1' }}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="skeleton-pulse h-5 w-28" />
+                  <div className="skeleton-pulse h-5 w-16" />
+                </div>
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {[0, 1, 2, 3, 4, 5, 6].map(j => (
+                    <div key={j} className="skeleton-pulse h-3 w-6 mx-auto" />
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: 35 }).map((_, j) => (
+                    <div key={j} className="skeleton-pulse h-8 w-8 mx-auto rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+        <>
         {/* ── Row 1: Stat Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {statsCards.map((s, i) => (
@@ -403,9 +525,6 @@ export default function Dashboard() {
                   <span className="text-right">Total Amount</span>
                 </div>
 
-                {loading ? (
-                  <LottieLoader size={120} text="Loading transactions..." />
-                ) : (
                   <div className="divide-y" style={{ borderColor: '#F0F4F8' }}>
                     {filteredOrders.length === 0 ? (
                       <div className="text-center py-10 text-stripe-muted text-sm">No transactions found for this period.</div>
@@ -601,7 +720,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+        </>
+        )}
 
       {/* ── Delete Confirmation Modal ── */}
       {confirmDelete && (
