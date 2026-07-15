@@ -236,8 +236,60 @@ export default function Profile() {
   );
 
   if (loading) return (
-    <div className="min-h-screen bg-stripe-bg flex items-center justify-center pt-16">
-      <LottieLoader size={120} text="Loading your profile..." />
+    <div className="min-h-screen pb-16 bg-stripe-bg">
+      <div className="w-full h-52 sm:h-64 skeleton-pulse rounded-none" />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="relative -mt-20 mb-6">
+          <div className="bg-white rounded-2xl shadow-lg border p-6 sm:p-8" style={{ borderColor: '#E6EBF1' }}>
+            <div className="flex flex-col sm:flex-row gap-6">
+              <div className="relative shrink-0 -mt-20 sm:-mt-16 self-center sm:self-start">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full skeleton-pulse border-4 border-white" />
+              </div>
+              <div className="flex-1 text-center sm:text-left mt-2">
+                <div className="skeleton-pulse h-8 w-48 mx-auto sm:mx-0 mb-4" />
+                <div className="flex justify-center sm:justify-start gap-6 sm:gap-8 mb-6">
+                  <div className="skeleton-pulse h-12 w-16" />
+                  <div className="skeleton-pulse h-12 w-16" />
+                  <div className="skeleton-pulse h-12 w-16" />
+                </div>
+                <div className="flex justify-center sm:justify-start gap-3 mb-5">
+                  <div className="skeleton-pulse h-5 w-24 rounded-full" />
+                  <div className="skeleton-pulse h-5 w-24 rounded-full" />
+                  <div className="skeleton-pulse h-5 w-32 rounded-full" />
+                </div>
+                <div className="flex justify-center sm:justify-start gap-3">
+                  <div className="skeleton-pulse h-10 w-32 rounded-xl" />
+                  <div className="skeleton-pulse h-10 w-28 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border mb-6" style={{ borderColor: '#E6EBF1' }}>
+          <div className="flex border-b" style={{ borderColor: '#E6EBF1' }}>
+             <div className="flex-1 py-4 flex justify-center"><div className="skeleton-pulse h-5 w-20" /></div>
+             <div className="flex-1 py-4 flex justify-center"><div className="skeleton-pulse h-5 w-16" /></div>
+             <div className="flex-1 py-4 flex justify-center"><div className="skeleton-pulse h-5 w-16" /></div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border bg-white overflow-hidden" style={{ borderColor: '#E6EBF1' }}>
+                   <div className="skeleton-pulse w-full rounded-none" style={{ aspectRatio: '4/3' }} />
+                   <div className="p-4">
+                     <div className="skeleton-pulse h-4 w-full mb-2" />
+                     <div className="skeleton-pulse h-4 w-1/2 mb-4" />
+                     <div className="flex justify-between items-center">
+                       <div className="skeleton-pulse h-4 w-12" />
+                       <div className="skeleton-pulse h-4 w-16" />
+                     </div>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 

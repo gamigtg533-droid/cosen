@@ -789,3 +789,14 @@
   letter-spacing: 0.5px;
   animation-duration: 1.5s;
 }
+@keyframes skeletonShimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-pulse {
+  background: linear-gradient(90deg, #e8ecf1 25%, #f3f6f9 37%, #e8ecf1 63%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+

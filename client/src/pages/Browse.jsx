@@ -356,7 +356,24 @@ export default function Browse() {
         )}
 
         {loading ? (
-          <LottieLoader size={120} text="Finding services..." />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #E6EBF1' }}>
+                <div className="skeleton-pulse w-full rounded-none" style={{ aspectRatio: '4/3' }} />
+                <div className="p-4">
+                  <div className="flex gap-2 mb-3">
+                    <div className="skeleton-pulse h-4 w-24" />
+                  </div>
+                  <div className="skeleton-pulse h-4 w-full mb-2" />
+                  <div className="skeleton-pulse h-4 w-3/4 mb-4" />
+                  <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid #F0F4F8' }}>
+                    <div className="skeleton-pulse h-4 w-16" />
+                    <div className="skeleton-pulse h-7 w-20 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : services.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-16 h-16 rounded-2xl bg-stripe-bg flex items-center justify-center mx-auto mb-5">
