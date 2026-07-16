@@ -608,25 +608,27 @@ router.put('/:id/complete', protect, async (req, res) => {
     const shortOrderId = String(req.params.id).slice(-8).toUpperCase();
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '25se02ml132@ppsu.ac.in';
 
-    // Insert payout and select it back
+    // Insert payout and select it back (only for razorpay/legacy orders)
     let payout = null;
-    try {
-      const { data: payData, error: payErr } = await supabase
-        .from('payouts')
-        .upsert({
-          order_id: req.params.id,
-          seller_id: order.seller_id,
-          amount: payoutAmount,
-          upi_id: sellerUpiId || 'NOT SET',
-          status: 'pending',
-        }, { onConflict: 'order_id' })
-        .select('id, status, amount, upi_id, paid_at')
-        .maybeSingle();
+    if (order.payment_method !== 'manual') {
+      try {
+        const { data: payData, error: payErr } = await supabase
+          .from('payouts')
+          .upsert({
+            order_id: req.params.id,
+            seller_id: order.seller_id,
+            amount: payoutAmount,
+            upi_id: sellerUpiId || 'NOT SET',
+            status: 'pending',
+          }, { onConflict: 'order_id' })
+          .select('id, status, amount, upi_id, paid_at')
+          .maybeSingle();
 
-      if (payErr) throw payErr;
-      payout = payData;
-    } catch (payErr) {
-      console.error('[Orders] Payout insert error:', payErr.message);
+        if (payErr) throw payErr;
+        payout = payData;
+      } catch (payErr) {
+        console.error('[Orders] Payout insert error:', payErr.message);
+      }
     }
 
     // Notify seller that order is completed (generic notification, NO payment/payout mention)
@@ -643,26 +645,28 @@ router.put('/:id/complete', protect, async (req, res) => {
       });
     }
 
-    // Email admin about new pending payout (non-blocking)
-    sendEmail({
-      email: ADMIN_EMAIL,
-      subject: `💰 New Payout Pending — Cosen Admin`,
-      message: `Order #${shortOrderId} completed.\n\nSeller: ${order.seller?.name} (${order.seller?.email})\nAmount: ₹${payoutAmount.toLocaleString('en-IN')}\nUPI ID: ${sellerUpiId || 'NOT SET — seller must update profile'}\nService: ${order.service?.title}\n\nLogin to admin panel to mark as paid:\nhttps://cosen.online/admin/payouts`,
-      html: `
-        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-          <h2 style="color:#635BFF">💰 New Payout Pending</h2>
-          <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin:20px 0">
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              <tr><td style="padding:6px 0;color:#6B7280">Seller</td><td style="font-weight:600;color:#1A202C">${order.seller?.name} &lt;${order.seller?.email}&gt;</td></tr>
-              <tr><td style="padding:6px 0;color:#6B7280">Amount</td><td style="font-weight:700;font-size:18px;color:#16A34A">₹${payoutAmount.toLocaleString('en-IN')}</td></tr>
-              <tr><td style="padding:6px 0;color:#6B7280">UPI ID</td><td style="font-weight:600;color:${sellerUpiId ? '#1A202C' : '#EF4444'}">${sellerUpiId || '⚠️ Not Set'}</td></tr>
-              <tr><td style="padding:6px 0;color:#6B7280">Service</td><td style="color:#4A5568">${order.service?.title}</td></tr>
-              <tr><td style="padding:6px 0;color:#6B7280">Order ID</td><td style="font-family:monospace;color:#6B7280">#${shortOrderId}</td></tr>
-            </table>
-          </div>
-          <a href="https://cosen.online/admin/payouts" style="display:inline-block;background:#635BFF;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Open Admin Panel →</a>
-        </div>`,
-    }).catch(e => console.error('[Orders] Admin payout email error:', e.message));
+    // Email admin about new pending payout (non-blocking) - Only for Razorpay/legacy
+    if (order.payment_method !== 'manual') {
+      sendEmail({
+        email: ADMIN_EMAIL,
+        subject: `💰 New Payout Pending — Cosen Admin`,
+        message: `Order #${shortOrderId} completed.\n\nSeller: ${order.seller?.name} (${order.seller?.email})\nAmount: ₹${payoutAmount.toLocaleString('en-IN')}\nUPI ID: ${sellerUpiId || 'NOT SET — seller must update profile'}\nService: ${order.service?.title}\n\nLogin to admin panel to mark as paid:\nhttps://cosen.online/admin/payouts`,
+        html: `
+          <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+            <h2 style="color:#635BFF">💰 New Payout Pending</h2>
+            <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin:20px 0">
+              <table style="width:100%;border-collapse:collapse;font-size:14px">
+                <tr><td style="padding:6px 0;color:#6B7280">Seller</td><td style="font-weight:600;color:#1A202C">${order.seller?.name} &lt;${order.seller?.email}&gt;</td></tr>
+                <tr><td style="padding:6px 0;color:#6B7280">Amount</td><td style="font-weight:700;font-size:18px;color:#16A34A">₹${payoutAmount.toLocaleString('en-IN')}</td></tr>
+                <tr><td style="padding:6px 0;color:#6B7280">UPI ID</td><td style="font-weight:600;color:${sellerUpiId ? '#1A202C' : '#EF4444'}">${sellerUpiId || '⚠️ Not Set'}</td></tr>
+                <tr><td style="padding:6px 0;color:#6B7280">Service</td><td style="color:#4A5568">${order.service?.title}</td></tr>
+                <tr><td style="padding:6px 0;color:#6B7280">Order ID</td><td style="font-family:monospace;color:#6B7280">#${shortOrderId}</td></tr>
+              </table>
+            </div>
+            <a href="https://cosen.online/admin/payouts" style="display:inline-block;background:#635BFF;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Open Admin Panel →</a>
+          </div>`,
+      }).catch(e => console.error('[Orders] Admin payout email error:', e.message));
+    }
 
     const mapped = mapOrder(updated, req.user._id);
     if (mapped) {

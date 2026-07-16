@@ -24,7 +24,7 @@ router.get('/stats', async (req, res) => {
       totalOrdersRes,
       disputedOrdersRes,
       completedOrdersRes,
-      servicesByCategoryRes,
+      manualOrdersRes,
     ] = await Promise.all([
       supabase.from('users').select('id', { count: 'exact', head: true }),
       supabase.from('users').select('id', { count: 'exact', head: true }).eq('id_card_status', 'approved'),
@@ -32,13 +32,19 @@ router.get('/stats', async (req, res) => {
       supabase.from('services').select('id', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('orders').select('id', { count: 'exact', head: true }),
       supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'disputed'),
-      supabase.from('orders').select('id, price, platform_fee', { count: 'exact' }).eq('status', 'completed'),
+      supabase.from('orders').select('id, price, platform_fee, payment_method', { count: 'exact' }).eq('status', 'completed'),
+      supabase.from('orders').select('id, price').eq('payment_method', 'manual').eq('manual_payment_status', 'seller_confirmed'),
     ]);
 
     // Calculate financial metrics
     const completedOrders = completedOrdersRes.data || [];
-    const totalEscrowVolume = completedOrders.reduce((sum, o) => sum + (o.price || 0), 0);
-    const totalPlatformRevenue = completedOrders.reduce((sum, o) => sum + (o.platform_fee || 0), 0);
+    const razorpayOrders = completedOrders.filter(o => o.payment_method === 'razorpay' || !o.payment_method); // Treat empty as legacy razorpay
+    
+    const totalEscrowVolume = razorpayOrders.reduce((sum, o) => sum + (o.price || 0), 0);
+    const totalPlatformRevenue = razorpayOrders.reduce((sum, o) => sum + (o.platform_fee || 0), 0);
+    
+    const manualConfirmedOrders = manualOrdersRes.data || [];
+    const manualPaymentVolume = manualConfirmedOrders.reduce((sum, o) => sum + (o.price || 0), 0);
 
     // Services by category breakdown
     const { data: categoryData } = await supabase
@@ -76,6 +82,7 @@ router.get('/stats', async (req, res) => {
         completedOrders: completedOrders.length,
         totalEscrowVolume,
         totalPlatformRevenue,
+        manualPaymentVolume,
         categoryBreakdown,
         signupsByDay,
       }

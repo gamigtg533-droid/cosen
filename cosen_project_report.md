@@ -676,3 +676,9 @@ The `sendSms.js` utility is also kept for future use once DLT registration is co
 ---
 
 *Last updated: July 15, 2026 | GitHub: gamigtg533-droid/cosen | Status: ðŸŸ¢ Live in Production*
+
+### July 2026 — Admin Panel Manual Payments Updates
+- **Separated Razorpay and Manual Metrics**: Updated the admin dashboard to correctly distinguish between Escrow Volume via Razorpay and Manual UPI Volume.
+- **Payout Section Tabs**: Added tabs in the Admin Payouts section to filter completed payouts by Payment by Cosen and Manual User UPI Payment.
+- **Prevent False Pending Payouts**: Ensured that manual orders do not generate pending payout records in the backend.
+

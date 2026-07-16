@@ -35,19 +35,58 @@ router.get('/pending', protect, adminOnly, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.get('/completed', protect, adminOnly, async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('payouts')
-      .select(`
-        id, amount, upi_id, status, created_at, paid_at, order_id,
-        seller:users!seller_id(id, name, email, avatar_url),
-        order:orders!order_id(id, price, seller_earnings, service:services!service_id(title))
-      `)
-      .eq('status', 'paid')
-      .order('paid_at', { ascending: false })
-      .limit(100);
+    const { type = 'razorpay' } = req.query;
 
-    if (error) throw error;
-    res.json({ success: true, payouts: data || [] });
+    if (type === 'razorpay') {
+      const { data, error } = await supabase
+        .from('payouts')
+        .select(`
+          id, amount, upi_id, status, created_at, paid_at, order_id,
+          seller:users!seller_id(id, name, email, avatar_url),
+          order:orders!order_id(id, price, seller_earnings, service:services!service_id(title))
+        `)
+        .eq('status', 'paid')
+        .order('paid_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return res.json({ success: true, payouts: data || [] });
+    } else if (type === 'manual') {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id, price, updated_at, created_at, seller_id,
+          seller:users!seller_id(id, name, email, avatar_url, upi_id),
+          service:services!service_id(title)
+        `)
+        .eq('payment_method', 'manual')
+        .eq('manual_payment_status', 'seller_confirmed')
+        .order('updated_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      const mapped = (data || []).map(o => ({
+        id: `manual-${o.id}`,
+        amount: o.price,
+        upi_id: o.seller?.upi_id || 'Direct Payment',
+        status: 'paid',
+        created_at: o.created_at,
+        paid_at: o.updated_at,
+        order_id: o.id,
+        seller: o.seller,
+        order: {
+          id: o.id,
+          price: o.price,
+          seller_earnings: o.price,
+          service: o.service
+        }
+      }));
+
+      return res.json({ success: true, payouts: mapped });
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid payout type' });
+    }
   } catch (err) {
     console.error('[Payouts] Fetch completed error:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch completed payouts' });

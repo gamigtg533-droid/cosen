@@ -153,9 +153,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Financial metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard icon={DollarSign} label="Total Escrow Volume" value={fmt(stats?.totalEscrowVolume)} color="#635BFF" sub="All-time completed orders" />
-        <StatCard icon={TrendingUp} label="Platform Revenue" value={fmt(stats?.totalPlatformRevenue)} color="#00D4AA" sub="Rank-based commission (Bronze 10%, Silver 6%, Gold 3%)" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard icon={DollarSign} label="Escrow Volume (Razorpay)" value={fmt(stats?.totalEscrowVolume)} color="#635BFF" sub="All-time completed" />
+        <StatCard icon={TrendingUp} label="Platform Revenue" value={fmt(stats?.totalPlatformRevenue)} color="#00D4AA" sub="From Razorpay orders" />
+        <StatCard icon={CheckCircle} label="Manual UPI Volume" value={fmt(stats?.manualPaymentVolume)} color="#34D399" sub="Direct buyer-to-seller" />
         <StatCard icon={CheckCircle} label="Completed Orders" value={fmtNum(stats?.completedOrders)} color="#A855F7" sub={`of ${fmtNum(stats?.totalOrders)} total`} />
       </div>
 

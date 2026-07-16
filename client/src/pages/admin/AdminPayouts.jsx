@@ -138,6 +138,7 @@ export default function AdminPayouts() {
   const [marking, setMarking] = useState('');
   const [toast, setToast] = useState(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [completedType, setCompletedType] = useState('razorpay');
 
   const loadPending = useCallback(async () => {
     setLoadingP(true);
@@ -148,17 +149,17 @@ export default function AdminPayouts() {
     finally { setLoadingP(false); }
   }, []);
 
-  const loadCompleted = useCallback(async () => {
+  const loadCompleted = useCallback(async (type) => {
     setLoadingC(true);
     try {
-      const res = await api.get('/payouts/completed');
+      const res = await api.get(`/payouts/completed?type=${type}`);
       setCompleted(res.data.payouts || []);
     } catch (e) { console.error(e); }
     finally { setLoadingC(false); }
   }, []);
 
   useEffect(() => { loadPending(); }, [loadPending]);
-  useEffect(() => { if (showCompleted) loadCompleted(); }, [showCompleted, loadCompleted]);
+  useEffect(() => { if (showCompleted) loadCompleted(completedType); }, [showCompleted, completedType, loadCompleted]);
 
   const handleMarkPaid = async (payoutId) => {
     setMarking(payoutId);
@@ -166,7 +167,7 @@ export default function AdminPayouts() {
       await api.patch(`/payouts/${payoutId}/mark-paid`);
       setPending(prev => prev.filter(p => p.id !== payoutId));
       setToast({ type: 'success', msg: '✅ Payout marked as paid. Email sent to seller.' });
-      if (showCompleted) loadCompleted();
+      if (showCompleted) loadCompleted(completedType);
     } catch (err) {
       setToast({ type: 'error', msg: err.response?.data?.message || 'Failed to mark as paid' });
     } finally { setMarking(''); }
@@ -251,27 +252,39 @@ export default function AdminPayouts() {
         </button>
 
         {showCompleted && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  {COL_HEADERS.map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest"
-                      style={{ color: 'rgba(255,255,255,0.3)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loadingC
-                  ? <TableSkeleton rows={3} />
-                  : completed.length === 0
-                    ? <tr><td colSpan={6} className="px-4 py-10 text-center text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>No completed payouts yet</td></tr>
-                    : completed.map(p => (
-                        <PayoutRow key={p.id} payout={p} onMarkPaid={() => {}} marking="" />
-                      ))
-                }
-              </tbody>
-            </table>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+              <button onClick={() => setCompletedType('razorpay')}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${completedType === 'razorpay' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}>
+                Payment by Cosen
+              </button>
+              <button onClick={() => setCompletedType('manual')}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${completedType === 'manual' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}>
+                Manual User UPI Payment
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    {COL_HEADERS.map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest"
+                        style={{ color: 'rgba(255,255,255,0.3)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingC
+                    ? <TableSkeleton rows={3} />
+                    : completed.length === 0
+                      ? <tr><td colSpan={6} className="px-4 py-10 text-center text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>No completed payouts yet</td></tr>
+                      : completed.map(p => (
+                          <PayoutRow key={p.id} payout={p} onMarkPaid={() => {}} marking="" />
+                        ))
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
