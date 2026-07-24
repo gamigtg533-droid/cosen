@@ -116,8 +116,10 @@ io.on('connection', (socket) => {
   console.log('🔗 Client connected:', socket.id);
 
   // ── User Presence ───────────────────────────────────
-  socket.on('register_user', (userId) => {
-    if (!userId) return;
+  socket.on('register_user', (rawUserId) => {
+    if (!rawUserId) return;
+    const userId = String(rawUserId).trim();
+    if (!userId || userId === 'undefined' || userId === 'null') return;
     socket.userId = userId;
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());

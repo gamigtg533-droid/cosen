@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import {
   ChevronRight, Menu, X, BookOpen, Code, Palette, UtensilsCrossed,
   Camera, Music, LayoutDashboard, Search, LogIn, LogOut, User as UserIcon,
@@ -8,6 +9,8 @@ import {
 import useAuthStore from '../store/authStore';
 import BrandLogo from './BrandLogo';
 import api from '../lib/api';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const navLinks = [
   { label: 'Browse', href: '/browse' },
@@ -44,6 +47,21 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef(null);
+
+  // Global socket presence registration
+  const currentUserId = user?._id || user?.id;
+  useEffect(() => {
+    if (!currentUserId) return;
+    const token = localStorage.getItem('cosen_token');
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+    });
+    socket.on('connect', () => {
+      socket.emit('register_user', currentUserId);
+    });
+    return () => socket.disconnect();
+  }, [currentUserId]);
 
   // Poll unread DM count every 30s
   useEffect(() => {

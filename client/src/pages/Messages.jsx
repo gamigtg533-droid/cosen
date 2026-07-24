@@ -91,6 +91,13 @@ export default function Messages() {
     load();
   }, [activeId]);
 
+  const activeIdRef = useRef(activeId);
+  const activeConvoTypeRef = useRef(activeConvo?.type);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+    activeConvoTypeRef.current = activeConvo?.type;
+  }, [activeId, activeConvo?.type]);
+
   // ── Socket.io ───────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
@@ -100,13 +107,28 @@ export default function Messages() {
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;
-    socket.on('connect',    () => {
+
+    const joinActiveRoom = () => {
+      const id = activeIdRef.current;
+      if (!id) return;
+      if (activeConvoTypeRef.current === 'sendiyou') {
+        socket.emit('join_order', id);
+      } else {
+        socket.emit('join_dm', id);
+      }
+    };
+
+    socket.on('connect', () => {
       console.log('⚡ Socket connected successfully');
       // Register this user for presence tracking
-      socket.emit('register_user', user._id);
+      const currentUserId = user?._id || user?.id;
+      if (currentUserId) socket.emit('register_user', currentUserId);
       // Request current online users list
       socket.emit('get_online_users');
+      // Join room on connect / reconnect
+      joinActiveRoom();
     });
+
     socket.on('connect_error', (err) => {
       console.warn('⚠️ Socket connection error, falling back to polling/REST:', err.message);
     });
@@ -140,7 +162,7 @@ export default function Messages() {
                 lastMessage: msg.content,
                 lastMessageAt: msg.createdAt,
                 // only increment unread if this convo is NOT currently active
-                unreadCount: msg.senderId !== user._id && msg.conversationId !== activeId
+                unreadCount: msg.senderId !== user._id && msg.conversationId !== activeIdRef.current
                   ? (c.unreadCount || 0) + 1
                   : c.unreadCount,
               }
@@ -161,7 +183,7 @@ export default function Messages() {
                 ...c,
                 lastMessage: msg.content,
                 lastMessageAt: msg.createdAt,
-                unreadCount: msg.senderId !== user._id && msg.orderId !== activeId
+                unreadCount: msg.senderId !== user._id && msg.orderId !== activeIdRef.current
                   ? (c.unreadCount || 0) + 1
                   : c.unreadCount,
               }
@@ -171,7 +193,7 @@ export default function Messages() {
     });
 
     return () => socket.disconnect();
-  }, [user, activeId]);
+  }, [user]);
 
   // ── Join/leave DM room on activeId change ───────────────────
   useEffect(() => {
@@ -351,18 +373,27 @@ export default function Messages() {
                         : 'hover:bg-slate-50/50 border-l-2 border-transparent'}
                     `}
                   >
-                    {/* Avatar with real photo */}
-                    {c.other?.avatarUrl ? (
-                      <img
-                        src={c.other.avatarUrl}
-                        alt={c.other.name}
-                        className="w-10 h-10 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-stripe-purple text-white flex items-center justify-center font-bold text-sm shrink-0">
-                        {initials}
-                      </div>
-                    )}
+                    {/* Avatar with real photo & online status dot */}
+                    <div className="relative shrink-0">
+                      {c.other?.avatarUrl ? (
+                        <img
+                          src={c.other.avatarUrl}
+                          alt={c.other.name}
+                          className="w-10 h-10 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-stripe-purple text-white flex items-center justify-center font-bold text-sm shrink-0">
+                          {initials}
+                        </div>
+                      )}
+                      {(c.other?._id || c.other?.id) && (
+                        <span
+                          className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
+                          style={{ background: onlineUsers.has(c.other?._id || c.other?.id) ? '#22c55e' : '#94a3b8' }}
+                          title={onlineUsers.has(c.other?._id || c.other?.id) ? 'Online' : 'Offline'}
+                        />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-stripe-slate text-sm truncate">
@@ -440,7 +471,7 @@ export default function Messages() {
                     )}
                     <span
                       className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
-                      style={{ background: onlineUsers.has(activeConvo?.other?._id) ? '#22c55e' : '#94a3b8' }}
+                      style={{ background: onlineUsers.has(activeConvo?.other?._id || activeConvo?.other?.id) ? '#22c55e' : '#94a3b8' }}
                     />
                   </Link>
 
@@ -455,7 +486,7 @@ export default function Messages() {
                       </button>
                     ) : (
                       <Link
-                        to={`/profile/${activeConvo?.other?._id}`}
+                        to={`/profile/${activeConvo?.other?._id || activeConvo?.other?.id}`}
                         className="font-semibold text-stripe-slate text-sm truncate hover:text-stripe-purple transition-colors block"
                       >
                         {activeConvo?.other?.name || '…'}
@@ -463,7 +494,7 @@ export default function Messages() {
                     )}
                     <div className="text-xs text-stripe-muted flex items-center gap-2 mt-0.5">
                       {activeConvo?.type !== 'sendiyou' && (
-                        <span>{onlineUsers.has(activeConvo?.other?._id) ? 'Online' : 'Offline'}</span>
+                        <span>{onlineUsers.has(activeConvo?.other?._id || activeConvo?.other?.id) ? 'Online' : 'Offline'}</span>
                       )}
                       {activeConvo?.type === 'sendiyou' && (
                         <>

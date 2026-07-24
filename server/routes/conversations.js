@@ -164,6 +164,7 @@ router.get('/', protect, async (req, res) => {
         let otherName = 'SendiYou Connection';
         let otherAvatar = '';
 
+        let otherId = null;
         if (isGroup) {
           // Use the service title set by the poster as the group name
           const groupTitle = o.service?.title || null;
@@ -174,6 +175,7 @@ router.get('/', protect, async (req, res) => {
           // Seller sees their own posted request — show the display name
           const buyer = o.buyer;
           if (buyer) {
+            otherId = buyer.id;
             const buyerRevealed = (o.revealed_ids || []).includes(buyer.id);
             otherName = buyerRevealed ? buyer.name : 'SendiYou Match';
             otherAvatar = buyerRevealed ? (buyer.avatar_url || '') : '';
@@ -184,6 +186,7 @@ router.get('/', protect, async (req, res) => {
           // Buyer sees the seller (poster)
           const other = o.seller;
           if (other) {
+            otherId = other.id;
             const otherRevealed = (o.revealed_ids || []).includes(other.id);
             otherName = otherRevealed ? other.name : (o.service?.display_name || 'Secret');
             otherAvatar = otherRevealed ? (other.avatar_url || '') : '';
@@ -214,7 +217,7 @@ router.get('/', protect, async (req, res) => {
             : (isSeller && !o.buyer_id ? 'Your request is live, waiting for a match!' : 'Connection accepted!'),
           lastMessageAt: lastMsg ? lastMsg.created_at : o.created_at,
           createdAt: o.created_at,
-          other: { name: otherName, avatarUrl: otherAvatar },
+          other: { _id: otherId, name: otherName, avatarUrl: otherAvatar },
           unreadCount: sendiUnread[o.id] || 0,
           sendiyou: {
             isExpired: false, // already filtered out expired ones above

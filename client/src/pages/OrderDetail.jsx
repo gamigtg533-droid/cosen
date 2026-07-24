@@ -78,11 +78,12 @@ export default function OrderDetail() {
   useEffect(() => {
     if (!user || !order) return;
 
-    // For group members: they may not be order.buyer_id but are in buyerIds
-    const isGroupMember = (order.buyerIds || []).includes(user._id);
-    const isBuyerSide = order.buyer?._id === user._id || isGroupMember;
-    const otherPartyId = isBuyerSide ? order.seller?._id : order.buyer?._id;
-    if (!otherPartyId) return;
+    const currentUserId = user?._id || user?.id;
+    const buyerId = order.buyer?._id || order.buyer?.id;
+    const sellerId = order.seller?._id || order.seller?.id;
+    const isGroupMember = (order.buyerIds || []).includes(currentUserId);
+    const isBuyerSide = buyerId === currentUserId || isGroupMember;
+    const otherPartyId = isBuyerSide ? sellerId : buyerId;
 
     const token = localStorage.getItem('cosen_token');
     const socket = io(SOCKET_URL, {
@@ -93,8 +94,9 @@ export default function OrderDetail() {
 
     socket.on('connect', () => {
       console.log('⚡ Socket connected successfully');
-      socket.emit('register_user', user._id);
+      if (currentUserId) socket.emit('register_user', currentUserId);
       socket.emit('get_online_users');
+      socket.emit('join_order', id);
     });
 
     socket.on('connect_error', (err) => {
@@ -102,18 +104,16 @@ export default function OrderDetail() {
     });
 
     socket.on('online_users_list', (users) => {
-      if (users.includes(otherPartyId)) setIsOtherPartyOnline(true);
+      if (otherPartyId && users.map(String).includes(String(otherPartyId))) setIsOtherPartyOnline(true);
     });
 
     socket.on('user_online', (userId) => {
-      if (userId === otherPartyId) setIsOtherPartyOnline(true);
+      if (otherPartyId && String(userId) === String(otherPartyId)) setIsOtherPartyOnline(true);
     });
 
     socket.on('user_offline', (userId) => {
-      if (userId === otherPartyId) setIsOtherPartyOnline(false);
+      if (otherPartyId && String(userId) === String(otherPartyId)) setIsOtherPartyOnline(false);
     });
-
-    socket.emit('join_order', id);
 
     // Server saves to DB and broadcasts the full message object back to everyone
     socket.on('receive_message', (msg) => {
